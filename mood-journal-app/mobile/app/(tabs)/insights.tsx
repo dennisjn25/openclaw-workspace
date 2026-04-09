@@ -1,42 +1,99 @@
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useSQLiteContext } from 'expo-sqlite';
+
+import { EntryRecord, getEntries } from '@/lib/journal-db';
 
 export default function InsightsScreen() {
+  const db = useSQLiteContext();
+  const [entries, setEntries] = useState<EntryRecord[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      getEntries(db).then(setEntries);
+    }, [db])
+  );
+
+  const stats = useMemo(() => buildStats(entries), [entries]);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Insights</Text>
-      <Text style={styles.subtitle}>Not diagnosis. Just pattern visibility with a calmer interface.</Text>
+      <Text style={styles.subtitle}>Pattern visibility, not overconfident mental health theater.</Text>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Weekly read</Text>
-        <Text style={styles.body}>
-          Mood is steadier on days with stronger sleep. Stress spikes cluster around work-tagged entries.
-        </Text>
+        <Text style={styles.body}>{stats.summary}</Text>
       </View>
 
       <View style={styles.cardRow}>
         <View style={styles.smallCard}>
-          <Text style={styles.smallLabel}>Sleep</Text>
-          <Text style={styles.smallValue}>↑ helps</Text>
+          <Text style={styles.smallLabel}>Average mood</Text>
+          <Text style={styles.smallValue}>{stats.averageMood.toFixed(1)} / 5</Text>
         </View>
         <View style={styles.smallCard}>
-          <Text style={styles.smallLabel}>Energy swings</Text>
-          <Text style={styles.smallValue}>2 this week</Text>
+          <Text style={styles.smallLabel}>Average sleep</Text>
+          <Text style={styles.smallValue}>{stats.averageSleep.toFixed(1)} h</Text>
         </View>
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Support tools</Text>
-        <Text style={styles.body}>Future modules: grounding, DBT prompts, medication logs, reminders, and trusted-person sharing.</Text>
+        <Text style={styles.cardTitle}>Most common tags</Text>
+        <Text style={styles.body}>{stats.topTags}</Text>
       </View>
 
       <View style={styles.notice}>
         <Text style={styles.noticeTitle}>Safety note</Text>
         <Text style={styles.noticeBody}>
-          This app should support reflection and early awareness. It should not present itself as crisis care, diagnosis, or a substitute for treatment.
+          Keep insights descriptive. Avoid labels like manic episode, depressive episode, or personality event unless a clinician-designed workflow exists behind them.
         </Text>
       </View>
     </View>
   );
+}
+
+function buildStats(entries: EntryRecord[]) {
+  if (entries.length === 0) {
+    return {
+      averageMood: 0,
+      averageSleep: 0,
+      topTags: 'No pattern data yet.',
+      summary: 'Once entries exist, this screen can surface trends around mood, sleep, stress, and triggers.',
+    };
+  }
+
+  const averageMood = entries.reduce((sum, entry) => sum + entry.moodScore, 0) / entries.length;
+  const sleepValues = entries.map((entry) => entry.sleepHours ?? 0).filter((value) => value > 0);
+  const averageSleep = sleepValues.length
+    ? sleepValues.reduce((sum, value) => sum + value, 0) / sleepValues.length
+    : 0;
+
+  const tagCounts = new Map<string, number>();
+  entries.forEach((entry) => {
+    entry.tags
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .forEach((tag) => tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1));
+  });
+
+  const topTags = [...tagCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([tag, count]) => `${tag} (${count})`)
+    .join(', ');
+
+  const summary = averageSleep >= 7
+    ? 'Sleep is landing in a steadier range, which often supports more stable mood and lower reactivity.'
+    : 'Sleep is running light, which is worth watching because it can amplify mood swings, impulsivity, and overwhelm.';
+
+  return {
+    averageMood,
+    averageSleep,
+    topTags: topTags || 'No strong tag pattern yet.',
+    summary,
+  };
 }
 
 const styles = StyleSheet.create({

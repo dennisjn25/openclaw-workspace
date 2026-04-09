@@ -46,6 +46,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <TabBarIcon name="line-chart" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="support"
+        options={{
+          title: 'Support',
+          tabBarIcon: ({ color }) => <TabBarIcon name="life-ring" color={color} />,
+        }}
+      />
     </Tabs>
   );
 }
