@@ -75,7 +75,7 @@
 ### Stack
 - **Framework:** JUCE (C++)
 - **AI Runtime:** ONNX Runtime (on-device)
-- **Cloud:** Python FastAPI + Firebase
+- **Cloud:** Python FastAPI + Supabase (PostgreSQL + Auth)
 - **Models:** PyTorch/TensorFlow trained
 
 ### Components

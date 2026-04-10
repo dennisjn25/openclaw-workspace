@@ -23,6 +23,12 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 cmake --build . --config Release
 ```
 
+### Supabase Setup
+1. Create a Supabase project at [supabase.com](https://supabase.com)
+2. Run `database-setup.sql` in the Supabase SQL Editor
+3. Get your project URL and anon key from Settings > API
+4. Configure in the plugin or companion app
+
 ### Install
 Copy `TheBackRoom.vst3` to your DAW's plugin directory:
 - macOS: `~/Library/Audio/Plug-Ins/VST3/`
