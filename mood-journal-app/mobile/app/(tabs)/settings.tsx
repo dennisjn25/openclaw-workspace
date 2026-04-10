@@ -3,8 +3,9 @@ import { useCallback, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
 
-import { getUserProfile, saveUserProfile, UserProfile } from '@/lib/journal-db';
+import { getUserProfile, getEntries, saveUserProfile, UserProfile, EntryRecord } from '@/lib/journal-db';
 import { cancelReminders, scheduleDailyReminder } from '@/lib/notifications';
+import { exportEntriesToText } from '@/lib/export';
 
 const defaultProfile: Omit<UserProfile, 'id'> = {
   displayName: '',
@@ -20,6 +21,7 @@ export default function SettingsScreen() {
   const [profile, setProfile] = useState<Omit<UserProfile, 'id'>>(defaultProfile);
   const [editingTime, setEditingTime] = useState(false);
   const [timeInput, setTimeInput] = useState('');
+  const [exporting, setExporting] = useState(false);
 
   const loadProfile = useCallback(async () => {
     const current = await getUserProfile(db);
@@ -71,6 +73,29 @@ export default function SettingsScreen() {
     }
 
     setEditingTime(false);
+  };
+
+  const handleExport = async () => {
+    try {
+      setExporting(true);
+      const entries = await getEntries(db);
+      const profileData = await getUserProfile(db);
+      
+      if (entries.length === 0) {
+        Alert.alert('No entries', 'Start logging check-ins first, then export.');
+        return;
+      }
+
+      const success = await exportEntriesToText(entries, profileData);
+      
+      if (!success) {
+        Alert.alert('Could not export', 'Sharing is not available on this device.');
+      }
+    } catch (e) {
+      Alert.alert('Export failed', 'Something went wrong while exporting.');
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -127,6 +152,17 @@ export default function SettingsScreen() {
             <Text style={styles.timeValue}>{profile.reminderTime}</Text>
           </TouchableOpacity>
         )}
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Export for therapist</Text>
+        <Text style={styles.helper}>Share your journal entries as a text file. Useful for appointments.</Text>
+        <TouchableOpacity 
+          style={[styles.secondaryButton, { marginTop: 12 }]} 
+          onPress={handleExport}
+          disabled={exporting}>
+          <Text style={styles.secondaryButtonText}>{exporting ? 'Exporting...' : 'Export journal'}</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.notice}>

@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Mood Journal",
-    "slug": "mood-journal",
+    "name": "Signal",
+    "slug": "signal",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mood-journal",
+    "scheme": "signal",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.moodjournal.app"
+      "bundleIdentifier": "com.signal.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +23,7 @@
         "backgroundColor": "#F6F1EB"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.moodjournal.app"
+      "package": "com.signal.app"
     },
     "web": {
       "bundler": "metro",
