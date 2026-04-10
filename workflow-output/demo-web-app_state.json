@@ -1,0 +1,175 @@
+{
+  "project_name": "demo-web-app",
+  "created_at": "2026-04-10T11:33:35.198205",
+  "user_requirement": "Build a simple web app that lets users track their daily habits",
+  "user_stories": [
+    {
+      "id": 1,
+      "title": "Core functionality implementation",
+      "as_a": "developer",
+      "i_want": "to implement the core features",
+      "so_that": "the application has basic functionality",
+      "acceptance": [
+        "Code compiles without errors",
+        "Basic features work as expected",
+        "Tests pass"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "User interface implementation",
+      "as_a": "user",
+      "i_want": "to interact with the application through a UI",
+      "so_that": "I can use the application easily",
+      "acceptance": [
+        "UI renders correctly",
+        "User can navigate between screens",
+        "Input validation works"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Data persistence",
+      "as_a": "user",
+      "i_want": "my data to be saved",
+      "so_that": "I can access it later",
+      "acceptance": [
+        "Data saves correctly",
+        "Data loads correctly",
+        "No data loss on restart"
+      ]
+    }
+  ],
+  "tech_design": {
+    "architecture": "Clean Architecture / MVVM",
+    "tech_stack": {
+      "frontend": "React Native with Expo",
+      "backend": "Local-first (SQLite) / Optional API later",
+      "language": "TypeScript",
+      "state_management": "Zustand",
+      "navigation": "Expo Router"
+    },
+    "components": [
+      {
+        "name": "screens",
+        "description": "UI screens"
+      },
+      {
+        "name": "components",
+        "description": "Reusable UI components"
+      },
+      {
+        "name": "lib",
+        "description": "Business logic and utilities"
+      },
+      {
+        "name": "services",
+        "description": "Data and external services"
+      }
+    ],
+    "data_model": {
+      "entities": [
+        "User",
+        "Entry",
+        "Profile"
+      ],
+      "storage": "SQLite via expo-sqlite"
+    },
+    "api_design": "RESTful endpoints (future)",
+    "security": "Local storage, no cloud sync yet"
+  },
+  "task_list": [
+    {
+      "id": 1,
+      "title": "Initialize project",
+      "status": "pending",
+      "priority": "high"
+    },
+    {
+      "id": 2,
+      "title": "Set up navigation and routing",
+      "status": "pending",
+      "priority": "high"
+    },
+    {
+      "id": 3,
+      "title": "Create data layer (SQLite)",
+      "status": "pending",
+      "priority": "high"
+    },
+    {
+      "id": 4,
+      "title": "Build UI components",
+      "status": "pending",
+      "priority": "medium"
+    },
+    {
+      "id": 5,
+      "title": "Implement screens",
+      "status": "pending",
+      "priority": "medium"
+    },
+    {
+      "id": 6,
+      "title": "Add state management",
+      "status": "pending",
+      "priority": "medium"
+    },
+    {
+      "id": 7,
+      "title": "Write tests",
+      "status": "pending",
+      "priority": "low"
+    },
+    {
+      "id": 8,
+      "title": "Build and verify",
+      "status": "pending",
+      "priority": "high"
+    }
+  ],
+  "code_outputs": [],
+  "current_phase": "complete",
+  "logs": [
+    {
+      "timestamp": "2026-04-10T11:33:35.198226",
+      "phase": "init",
+      "message": "Started workflow for: demo-web-app"
+    },
+    {
+      "timestamp": "2026-04-10T11:33:35.198232",
+      "phase": "refine",
+      "message": "Analyzing requirement..."
+    },
+    {
+      "timestamp": "2026-04-10T11:33:35.198237",
+      "phase": "refine",
+      "message": "Generated 3 user stories"
+    },
+    {
+      "timestamp": "2026-04-10T11:33:35.198240",
+      "phase": "design",
+      "message": "Creating technical design..."
+    },
+    {
+      "timestamp": "2026-04-10T11:33:35.198244",
+      "phase": "design",
+      "message": "Technical design complete"
+    },
+    {
+      "timestamp": "2026-04-10T11:33:35.198246",
+      "phase": "plan",
+      "message": "Planning implementation tasks..."
+    },
+    {
+      "timestamp": "2026-04-10T11:33:35.198250",
+      "phase": "plan",
+      "message": "Created 8 tasks"
+    },
+    {
+      "timestamp": "2026-04-10T11:33:35.198253",
+      "phase": "complete",
+      "message": "Workflow complete!"
+    }
+  ]
+}

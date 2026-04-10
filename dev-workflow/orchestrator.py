@@ -218,10 +218,10 @@ def save_workflow(state: WorkflowState, output_dir: str = "workflow-output"):
     with open(output_path / f"{state.project_name}_tasks.md", "w") as f:
         f.write(f"# Task List: {state.project_name}\n\n")
         for task in state.task_list:
-            status = "✅" if task['status'] == "done" else "⏳"
+            status = "[x]" if task['status'] == "done" else "[ ]"
             f.write(f"{status} **{task['id']}. {task['title']}** ({task['priority']})\n")
     
-    print(f"\n📁 Output saved to: {output_path}/")
+    print(f"\nOutput saved to: {output_path}/")
 
 
 # CLI interface
@@ -236,9 +236,9 @@ if __name__ == "__main__":
     project_name = sys.argv[1]
     requirement = sys.argv[2]
     
-    print(f"\n🚀 Starting workflow for: {project_name}\n")
+    print(f"\nStarting workflow for: {project_name}\n")
     state = run_workflow(project_name, requirement)
     save_workflow(state)
     
-    print("\n✅ Workflow complete!")
-    print(f"📋 Generated: {len(state.user_stories)} stories, {len(state.task_list)} tasks")
+    print("\nWorkflow complete!")
+    print(f"Generated: {len(state.user_stories)} stories, {len(state.task_list)} tasks")
