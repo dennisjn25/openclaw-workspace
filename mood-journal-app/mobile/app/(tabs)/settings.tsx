@@ -1,9 +1,10 @@
 import { useFocusEffect, router } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
 
 import { getUserProfile, saveUserProfile, UserProfile } from '@/lib/journal-db';
+import { cancelReminders, scheduleDailyReminder } from '@/lib/notifications';
 
 const defaultProfile: Omit<UserProfile, 'id'> = {
   displayName: '',
@@ -17,10 +18,13 @@ const defaultProfile: Omit<UserProfile, 'id'> = {
 export default function SettingsScreen() {
   const db = useSQLiteContext();
   const [profile, setProfile] = useState<Omit<UserProfile, 'id'>>(defaultProfile);
+  const [editingTime, setEditingTime] = useState(false);
+  const [timeInput, setTimeInput] = useState('');
 
   const loadProfile = useCallback(async () => {
     const current = await getUserProfile(db);
     setProfile(current ?? defaultProfile);
+    setTimeInput((current?.reminderTime) || '20:00');
   }, [db]);
 
   useFocusEffect(
@@ -30,9 +34,43 @@ export default function SettingsScreen() {
   );
 
   const toggleReminder = async (value: boolean) => {
+    let success = true;
+    if (value) {
+      success = await scheduleDailyReminder(profile.reminderTime);
+    } else {
+      await cancelReminders();
+    }
+
+    if (!success) {
+      Alert.alert(
+        'Notifications blocked',
+        'Please enable notifications in your device settings so you can receive reminders.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     const next = { ...profile, reminderEnabled: value ? 1 : 0 };
     setProfile(next);
     await saveUserProfile(db, next);
+  };
+
+  const saveTime = async () => {
+    const timeRegex = /^([01]?\d|2[0-3]):([0-5]\d)$/;
+    if (!timeRegex.test(timeInput)) {
+      Alert.alert('Invalid time', 'Please use 24-hour format like 20:00 or 09:30');
+      return;
+    }
+
+    const next = { ...profile, reminderTime: timeInput };
+    setProfile(next);
+    await saveUserProfile(db, next);
+
+    if (profile.reminderEnabled === 1) {
+      await scheduleDailyReminder(timeInput);
+    }
+
+    setEditingTime(false);
   };
 
   return (
@@ -57,12 +95,38 @@ export default function SettingsScreen() {
         <View style={styles.switchRow}>
           <View style={styles.switchCopy}>
             <Text style={styles.cardTitle}>Daily reminder</Text>
-            <Text style={styles.helper}>Keep it opt-in and low pressure.</Text>
+            <Text style={styles.helper}>A gentle nudge, no streak pressure.</Text>
           </View>
           <Switch value={profile.reminderEnabled === 1} onValueChange={toggleReminder} />
         </View>
-        <Text style={styles.label}>Reminder time</Text>
-        <Text style={styles.value}>{profile.reminderTime}</Text>
+        {editingTime ? (
+          <View style={styles.timeEdit}>
+            <TextInput
+              value={timeInput}
+              onChangeText={setTimeInput}
+              keyboardType="default"
+              style={styles.timeInput}
+              placeholder="20:00"
+              placeholderTextColor="#7B7F89"
+            />
+            <TouchableOpacity style={styles.saveButton} onPress={saveTime}>
+              <Text style={styles.saveButtonText}>Save</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => {
+                setTimeInput(profile.reminderTime);
+                setEditingTime(false);
+              }}>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity onPress={() => setEditingTime(true)}>
+            <Text style={styles.label}>Reminder time</Text>
+            <Text style={styles.timeValue}>{profile.reminderTime}</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.notice}>
@@ -113,6 +177,12 @@ const styles = StyleSheet.create({
     color: '#27303D',
     fontWeight: '600',
   },
+  timeValue: {
+    fontSize: 16,
+    color: '#27303D',
+    fontWeight: '600',
+    marginTop: 4,
+  },
   switchRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -127,6 +197,39 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     color: '#5E6472',
+  },
+  timeEdit: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  timeInput: {
+    flex: 1,
+    backgroundColor: '#F8F6F3',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    color: '#1E1F24',
+  },
+  saveButton: {
+    backgroundColor: '#5B6CFF',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  cancelButton: {
+    backgroundColor: '#EEF0F4',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  cancelButtonText: {
+    color: '#394150',
+    fontWeight: '600',
   },
   secondaryButton: {
     backgroundColor: '#EEF0F4',

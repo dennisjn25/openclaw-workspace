@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 
 import { getUserProfile, saveUserProfile } from '@/lib/journal-db';
+import { cancelReminders, scheduleDailyReminder } from '@/lib/notifications';
 
 const conditionOptions = ['ADHD', 'BPD', 'Bipolar', 'Depression', 'Anxiety'];
 
@@ -42,6 +43,13 @@ export default function OnboardingScreen() {
   const handleSave = async () => {
     try {
       setSaving(true);
+
+      if (reminderEnabled) {
+        await scheduleDailyReminder(reminderTime);
+      } else {
+        await cancelReminders();
+      }
+
       await saveUserProfile(db, {
         displayName: displayName.trim(),
         conditions: conditions.join(','),
@@ -50,6 +58,7 @@ export default function OnboardingScreen() {
         reminderEnabled: reminderEnabled ? 1 : 0,
         reminderTime: reminderTime.trim() || '20:00',
       });
+
       Alert.alert('Saved', 'Your support profile is stored locally on this device.');
       router.back();
     } catch {
@@ -70,7 +79,7 @@ export default function OnboardingScreen() {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Basics</Text>
         <TextInput
-          placeholder="Display name"
+          placeholder="What should we call you?"
           placeholderTextColor="#7B7F89"
           value={displayName}
           onChangeText={setDisplayName}
@@ -79,7 +88,8 @@ export default function OnboardingScreen() {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Conditions this app should account for</Text>
+        <Text style={styles.cardTitle}>What should the app account for?</Text>
+        <Text style={styles.cardHelper}>Select any that apply to you.</Text>
         <View style={styles.chipRow}>
           {conditionOptions.map((condition) => {
             const active = conditions.includes(condition);
@@ -97,16 +107,18 @@ export default function OnboardingScreen() {
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Support plan</Text>
+        <Text style={styles.cardHelper}>Who can help when things feel heavy?</Text>
         <TextInput
-          placeholder="Trusted support contact"
+          placeholder="Name or number of a trusted person"
           placeholderTextColor="#7B7F89"
           value={supportContact}
           onChangeText={setSupportContact}
           style={styles.input}
         />
+        <Text style={[styles.cardHelper, { marginTop: 12 }]}>What should they do first?</Text>
         <TextInput
           multiline
-          placeholder="When things escalate, what should this person do first?"
+          placeholder="e.g., text me first, stay on the phone, call my therapist..."
           placeholderTextColor="#7B7F89"
           value={crisisPlan}
           onChangeText={setCrisisPlan}
@@ -118,17 +130,19 @@ export default function OnboardingScreen() {
         <View style={styles.switchRow}>
           <View style={styles.switchCopy}>
             <Text style={styles.cardTitle}>Gentle reminder</Text>
-            <Text style={styles.helper}>A nudge for daily check-ins, without shame or streak pressure.</Text>
+            <Text style={styles.cardHelper}>A nudge for daily check-ins, no streak pressure.</Text>
           </View>
           <Switch value={reminderEnabled} onValueChange={setReminderEnabled} />
         </View>
-        <TextInput
-          placeholder="20:00"
-          placeholderTextColor="#7B7F89"
-          value={reminderTime}
-          onChangeText={setReminderTime}
-          style={styles.input}
-        />
+        {reminderEnabled && (
+          <TextInput
+            placeholder="e.g. 20:00 or 09:30"
+            placeholderTextColor="#7B7F89"
+            value={reminderTime}
+            onChangeText={setReminderTime}
+            style={styles.input}
+          />
+        )}
       </View>
 
       <View style={styles.notice}>
@@ -179,6 +193,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1E1F24',
   },
+  cardHelper: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#5E6472',
+  },
   input: {
     backgroundColor: '#F8F6F3',
     borderRadius: 16,
@@ -186,7 +205,7 @@ const styles = StyleSheet.create({
     color: '#1E1F24',
   },
   textarea: {
-    minHeight: 120,
+    minHeight: 100,
     textAlignVertical: 'top',
   },
   chipRow: {
@@ -219,11 +238,6 @@ const styles = StyleSheet.create({
   switchCopy: {
     flex: 1,
     gap: 4,
-  },
-  helper: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#5E6472',
   },
   notice: {
     backgroundColor: '#FFF4E8',
