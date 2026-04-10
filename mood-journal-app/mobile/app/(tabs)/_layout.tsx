@@ -9,7 +9,7 @@ function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>['name'];
   color: string;
 }) {
-  return <FontAwesome size={24} style={{ marginBottom: -2 }} {...props} />;
+  return <FontAwesome size={22} style={{ marginBottom: -2 }} {...props} />;
 }
 
 export default function TabLayout() {
@@ -20,7 +20,7 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: '#5B6CFF',
         tabBarInactiveTintColor: '#8B90A0',
-        tabBarStyle: { height: 64, paddingBottom: 8, paddingTop: 8 },
+        tabBarStyle: { height: 68, paddingBottom: 8, paddingTop: 8 },
         headerStyle: { backgroundColor: '#F6F1EB' },
         headerTintColor: Colors[colorScheme ?? 'light'].text,
         headerShadowVisible: false,
@@ -51,6 +51,13 @@ export default function TabLayout() {
         options={{
           title: 'Support',
           tabBarIcon: ({ color }) => <TabBarIcon name="life-ring" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <TabBarIcon name="cog" color={color} />,
         }}
       />
     </Tabs>

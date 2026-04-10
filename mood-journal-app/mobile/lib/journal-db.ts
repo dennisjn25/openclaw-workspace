@@ -13,20 +13,27 @@ export type EntryRecord = {
   tags: string;
 };
 
+export type UserProfile = {
+  id: number;
+  displayName: string;
+  conditions: string;
+  supportContact: string;
+  crisisPlan: string;
+  reminderEnabled: number;
+  reminderTime: string;
+};
+
 export const DATABASE_NAME = 'mood-journal.db';
 
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
-  const DATABASE_VERSION = 1;
+  const DATABASE_VERSION = 2;
   const result = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
   const currentDbVersion = result?.user_version ?? 0;
 
-  if (currentDbVersion >= DATABASE_VERSION) {
-    return;
-  }
+  await db.execAsync('PRAGMA journal_mode = WAL;');
 
   if (currentDbVersion === 0) {
     await db.execAsync(`
-      PRAGMA journal_mode = WAL;
       CREATE TABLE IF NOT EXISTS entries (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         createdAt TEXT NOT NULL,
@@ -42,6 +49,20 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
     `);
 
     await seedEntries(db);
+  }
+
+  if (currentDbVersion < 2) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS user_profile (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        displayName TEXT NOT NULL DEFAULT '',
+        conditions TEXT NOT NULL DEFAULT '',
+        supportContact TEXT NOT NULL DEFAULT '',
+        crisisPlan TEXT NOT NULL DEFAULT '',
+        reminderEnabled INTEGER NOT NULL DEFAULT 0,
+        reminderTime TEXT NOT NULL DEFAULT '20:00'
+      );
+    `);
   }
 
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);
@@ -126,5 +147,32 @@ export async function createEntry(
     entry.impulseScore ?? null,
     entry.note,
     entry.tags
+  );
+}
+
+export async function getUserProfile(db: SQLiteDatabase) {
+  return db.getFirstAsync<UserProfile>('SELECT * FROM user_profile WHERE id = 1');
+}
+
+export async function saveUserProfile(
+  db: SQLiteDatabase,
+  profile: Omit<UserProfile, 'id'>
+) {
+  await db.runAsync(
+    `INSERT INTO user_profile (id, displayName, conditions, supportContact, crisisPlan, reminderEnabled, reminderTime)
+     VALUES (1, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET
+       displayName = excluded.displayName,
+       conditions = excluded.conditions,
+       supportContact = excluded.supportContact,
+       crisisPlan = excluded.crisisPlan,
+       reminderEnabled = excluded.reminderEnabled,
+       reminderTime = excluded.reminderTime`,
+    profile.displayName,
+    profile.conditions,
+    profile.supportContact,
+    profile.crisisPlan,
+    profile.reminderEnabled,
+    profile.reminderTime
   );
 }

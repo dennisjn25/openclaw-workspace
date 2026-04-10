@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useFocusEffect, router } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
 
-import { createEntry } from '@/lib/journal-db';
+import { createEntry, getUserProfile, UserProfile } from '@/lib/journal-db';
 import { moodOptions, todayPrompt } from '@/lib/mock-data';
 
 const scale = [1, 2, 3, 4, 5];
@@ -10,6 +11,7 @@ const quickTags = ['sleep', 'work', 'relationships', 'health', 'money', 'overwhe
 
 export default function TodayScreen() {
   const db = useSQLiteContext();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [selectedMood, setSelectedMood] = useState(moodOptions[2]);
   const [energyScore, setEnergyScore] = useState(3);
   const [stressScore, setStressScore] = useState(3);
@@ -18,6 +20,12 @@ export default function TodayScreen() {
   const [note, setNote] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>(['focus']);
   const [saving, setSaving] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      getUserProfile(db).then(setProfile);
+    }, [db])
+  );
 
   const canSave = useMemo(() => note.trim().length > 0, [note]);
 
@@ -60,6 +68,25 @@ export default function TodayScreen() {
       <Text style={styles.subtitle}>
         Low-friction check-ins for attention swings, emotional intensity, and mood patterns.
       </Text>
+
+      {!profile ? (
+        <View style={styles.profileCard}>
+          <Text style={styles.profileTitle}>Set up the support profile first</Text>
+          <Text style={styles.profileText}>
+            This lets the app adapt to the user, their condition mix, and what support should happen when things escalate.
+          </Text>
+          <TouchableOpacity style={styles.primaryButton} onPress={() => router.push('/onboarding')}>
+            <Text style={styles.primaryButtonText}>Start onboarding</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={styles.profileCard}>
+          <Text style={styles.profileTitle}>Support profile active</Text>
+          <Text style={styles.profileText}>
+            {profile.displayName || 'User'} • {profile.conditions || 'conditions not set'} • reminder {profile.reminderEnabled ? 'on' : 'off'}
+          </Text>
+        </View>
+      )}
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Quick mood check</Text>
@@ -132,7 +159,7 @@ export default function TodayScreen() {
             disabled={!canSave || saving}>
             <Text style={styles.primaryButtonText}>{saving ? 'Saving...' : 'Save entry'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.85}>
+          <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.85} onPress={() => router.push('/(tabs)/support')}>
             <Text style={styles.secondaryButtonText}>Grounding tools</Text>
           </TouchableOpacity>
         </View>
@@ -199,6 +226,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     color: '#5E6472',
+  },
+  profileCard: {
+    backgroundColor: '#E9ECFF',
+    borderRadius: 20,
+    padding: 18,
+    gap: 10,
+  },
+  profileTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1E1F24',
+  },
+  profileText: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: '#3E4A68',
   },
   card: {
     backgroundColor: '#FFFFFF',
