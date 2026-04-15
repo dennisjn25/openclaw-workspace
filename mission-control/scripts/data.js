@@ -4,87 +4,87 @@
 const AGENT_ROSTER = {
     kirby: {
         id: 'kirby', name: 'Kirby', role: 'Orchestrator', level: 5, status: 'Idle',
-        specialties: ['Coordination', 'Deployment'], avatar: 'mission-control/assets/agents/kirby.png',
+        specialties: ['Coordination', 'Deployment'], avatar: 'mission-control/assets/agents/kirby.svg',
         roomTheme: 'HQ Desk', synergy: [], energy: 100, affinity: 80
     },
     zelda: {
         id: 'zelda', name: 'Zelda', role: 'Strategist', level: 4, status: 'Idle',
-        specialties: ['Planning', 'Roadmaps'], avatar: 'mission-control/assets/agents/zelda.png',
+        specialties: ['Planning', 'Roadmaps'], avatar: 'mission-control/assets/agents/zelda.svg',
         roomTheme: 'Strategy Chamber', synergy: [], energy: 95, affinity: 75
     },
     tails: {
         id: 'tails', name: 'Tails', role: 'Engineer', level: 4, status: 'Idle',
-        specialties: ['Coding', 'Automation'], avatar: 'mission-control/assets/agents/tails.png',
+        specialties: ['Coding', 'Automation'], avatar: 'mission-control/assets/agents/tails.svg',
         roomTheme: 'Code Lab', synergy: [], energy: 90, affinity: 70
     },
     link: {
         id: 'link', name: 'Link', role: 'Researcher', level: 3, status: 'Idle',
-        specialties: ['Intelligence', 'Discovery'], avatar: 'mission-control/assets/agents/link.png',
+        specialties: ['Intelligence', 'Discovery'], avatar: 'mission-control/assets/agents/link.svg',
         roomTheme: 'Research Den', synergy: [], energy: 88, affinity: 65
     },
     samus: {
         id: 'samus', name: 'Samus', role: 'Security Specialist', level: 5, status: 'Idle',
-        specialties: ['Threat Detection', 'QA'], avatar: 'mission-control/assets/agents/samus.png',
+        specialties: ['Threat Detection', 'QA'], avatar: 'mission-control/assets/agents/samus.svg',
         roomTheme: 'Security Bay', synergy: [], energy: 98, affinity: 78
     },
     professor_oak: {
         id: 'professor_oak', name: 'Professor Oak', role: 'Archivist', level: 3, status: 'Idle',
-        specialties: ['Documentation', 'Knowledge Base'], avatar: 'mission-control/assets/agents/professor_oak.png',
+        specialties: ['Documentation', 'Knowledge Base'], avatar: 'mission-control/assets/agents/professor_oak.svg',
         roomTheme: 'Docs Library', synergy: [], energy: 85, affinity: 60
     },
     tom_nook: {
         id: 'tom_nook', name: 'Tom Nook', role: 'Economist', level: 4, status: 'Idle',
-        specialties: ['Pricing', 'Offers'], avatar: 'mission-control/assets/agents/tom_nook.png',
+        specialties: ['Pricing', 'Offers'], avatar: 'mission-control/assets/agents/tom_nook.svg',
         roomTheme: 'Commerce Vault', synergy: [], energy: 92, affinity: 72
     },
     peach: {
         id: 'peach', name: 'Peach', role: 'Communicator', level: 3, status: 'Idle',
-        specialties: ['Customer Messaging', 'Brand Voice'], avatar: 'mission-control/assets/agents/peach.png',
+        specialties: ['Customer Messaging', 'Brand Voice'], avatar: 'mission-control/assets/agents/peach.svg',
         roomTheme: 'Comm Station', synergy: [], energy: 87, affinity: 68
     },
     mario: {
         id: 'mario', name: 'Mario', role: 'Operations', level: 4, status: 'Idle',
-        specialties: ['Workflow Automation', 'Recurring Systems'], avatar: 'mission-control/assets/agents/mario.png',
+        specialties: ['Workflow Automation', 'Recurring Systems'], avatar: 'mission-control/assets/agents/mario.svg',
         roomTheme: 'Ops Garage', synergy: [], energy: 93, affinity: 73
     },
     luigi: {
         id: 'luigi', name: 'Luigi', role: 'Recovery Specialist', level: 3, status: 'Idle',
-        specialties: ['Debugging', 'Problem Solving'], avatar: 'mission-control/assets/agents/luigi.png',
+        specialties: ['Debugging', 'Problem Solving'], avatar: 'mission-control/assets/agents/luigi.svg',
         roomTheme: 'Recovery Garage', synergy: [], energy: 89, affinity: 69
     },
     sonic: {
         id: 'sonic', name: 'Sonic', role: 'Launch Specialist', level: 4, status: 'Idle',
-        specialties: ['Speed', 'Campaign Boosts'], avatar: 'mission-control/assets/agents/sonic.png',
+        specialties: ['Speed', 'Campaign Boosts'], avatar: 'mission-control/assets/agents/sonic.svg',
         roomTheme: 'Launch Terminal', synergy: [], energy: 91, affinity: 71
     },
     selphie: {
         id: 'selphie', name: 'Selphie', role: 'Creative Director', level: 4, status: 'Idle',
-        specialties: ['Concept Storms', 'Prompt Lab'], avatar: 'mission-control/assets/agents/selphie.png',
+        specialties: ['Concept Storms', 'Prompt Lab'], avatar: 'mission-control/assets/agents/selphie.svg',
         roomTheme: 'Creative Room', synergy: [], energy: 94, affinity: 74
     },
     squall: {
         id: 'squall', name: 'Squall', role: 'Music Producer', level: 5, status: 'Idle',
-        specialties: ['Production', 'Mixing'], avatar: 'mission-control/assets/agents/squall.png',
+        specialties: ['Production', 'Mixing'], avatar: 'mission-control/assets/agents/squall.svg',
         roomTheme: 'Music Studio', synergy: [], energy: 96, affinity: 76
     },
     rinoa: {
         id: 'rinoa', name: 'Rinoa', role: 'Social Manager', level: 4, status: 'Idle',
-        specialties: ['Content Creation', 'Engagement'], avatar: 'mission-control/assets/agents/rinoa.png',
+        specialties: ['Content Creation', 'Engagement'], avatar: 'mission-control/assets/agents/rinoa.svg',
         roomTheme: 'Social Hub', synergy: [], energy: 90, affinity: 70
     },
     edea: {
         id: 'edea', name: 'Edea', role: 'Mystic', level: 5, status: 'Idle',
-        specialties: ['Astrology', 'Symbolic Systems'], avatar: 'mission-control/assets/agents/edea.png',
+        specialties: ['Astrology', 'Symbolic Systems'], avatar: 'mission-control/assets/agents/edea.svg',
         roomTheme: 'Mystic Sanctum', synergy: [], energy: 97, affinity: 77
     },
     yuna: {
         id: 'yuna', name: 'Yuna', role: 'Vocalist', level: 3, status: 'Idle',
-        specialties: ['Lyric Writing', 'Emotional Delivery'], avatar: 'mission-control/assets/agents/yuna.png',
+        specialties: ['Lyric Writing', 'Emotional Delivery'], avatar: 'mission-control/assets/agents/yuna.svg',
         roomTheme: 'Vocal Sanctuary', synergy: [], energy: 86, affinity: 67
     },
     saria: {
         id: 'saria', name: 'Saria', role: 'Healer', level: 4, status: 'Idle',
-        specialties: ['Restorative Support', 'Herbal Wisdom'], avatar: 'mission-control/assets/agents/saria.png',
+        specialties: ['Restorative Support', 'Herbal Wisdom'], avatar: 'mission-control/assets/agents/saria.svg',
         roomTheme: 'Healing Grove', synergy: [], energy: 92, affinity: 72
     }
 };
