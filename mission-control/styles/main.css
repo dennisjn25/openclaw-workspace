@@ -101,6 +101,27 @@ body {
   overflow: hidden;
 }
 
+#hq-title-cluster {
+  display: grid;
+  gap: 3px;
+  margin-right: auto;
+  min-width: 210px;
+}
+
+.hq-kicker {
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #7ba9e8;
+}
+
+.hq-title {
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  color: #f4fbff;
+  text-shadow: 0 0 14px rgba(86,180,255,.28);
+}
+
 #hud-top-bar::before {
   content: '';
   position: absolute;
@@ -165,6 +186,17 @@ body {
     radial-gradient(circle at 30% 30%, rgba(68,243,178,.12), rgba(0,0,0,.3));
   min-height: 690px;
   box-shadow: inset 0 0 80px rgba(3, 8, 20, .55), 0 0 40px rgba(68,243,178,.06);
+}
+
+#base-map-area::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0), rgba(86,180,255,.04), rgba(255,255,255,0)),
+    radial-gradient(circle at 50% 50%, rgba(255,209,102,.04), transparent 40%);
+  z-index: 1;
+  pointer-events: none;
 }
 
 .base-map-placeholder {
@@ -504,6 +536,37 @@ body.ambience-off #alert-routing-layer {
   box-shadow: 0 0 18px rgba(86,180,255,.08);
 }
 
+#hero-status-rack {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  z-index: 8;
+  display: grid;
+  gap: 10px;
+  width: 182px;
+}
+
+.rack-card {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(70, 103, 157, .72);
+  background: linear-gradient(180deg, rgba(8,15,28,.88), rgba(6,10,21,.9));
+  box-shadow: 0 0 18px rgba(86,180,255,.08);
+}
+
+.rack-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 9px;
+  font-family: var(--font-pixel);
+  color: #87ace2;
+}
+
+.rack-card strong {
+  font-size: 13px;
+  color: #f6fbff;
+}
+
 .strip-title {
   font-family: var(--font-pixel);
   font-size: 10px;
@@ -630,6 +693,11 @@ body.ambience-off #alert-routing-layer {
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.03), 0 0 18px rgba(86,180,255,.05);
   position: relative;
   overflow: hidden;
+}
+
+.panel-section:hover {
+  border-color: rgba(103, 139, 202, .82);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04), 0 0 24px rgba(86,180,255,.08);
 }
 
 .panel-section::before {
@@ -1283,6 +1351,35 @@ body.ambience-off #alert-routing-layer {
   background: linear-gradient(180deg, rgba(18,31,56,.98), rgba(12,22,42,.98));
   border: 1px solid #3c5c92;
   box-shadow: 0 14px 40px rgba(0,0,0,.45);
+  position: relative;
+}
+
+.modal-content::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 3px;
+  background: linear-gradient(90deg, rgba(86,180,255,0), rgba(86,180,255,.95), rgba(255,209,102,.7), rgba(86,180,255,0));
+}
+
+.modal-content h2 {
+  margin-top: 6px;
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  color: var(--color-accent-gold);
+}
+
+#mission-detail-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #f2f8ff;
+}
+
+#mission-detail-description {
+  line-height: 1.7;
+  color: #d4e3ff;
 }
 
 .close-modal-button {
@@ -1440,6 +1537,16 @@ body.ambience-off #alert-routing-layer {
   overflow: hidden;
 }
 
+.room-overlay-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(86,180,255,0), rgba(86,180,255,.9), rgba(255,209,102,.7), rgba(86,180,255,0));
+}
+
 #room-overlay-ambience {
   position: absolute;
   inset: 0;
@@ -1487,6 +1594,18 @@ body.ambience-off #alert-routing-layer {
 
 .room-overlay-card p {
   margin: 8px 0;
+}
+
+#room-overlay-role {
+  font-size: 13px;
+  color: #dce8ff;
+}
+
+#room-overlay-status {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(72, 104, 158, .58);
+  background: rgba(8, 15, 28, .54);
 }
 
 .room-overlay-tags {
@@ -1544,6 +1663,16 @@ body.ambience-off #alert-routing-layer {
   box-shadow: 0 0 0 2px rgba(86,180,255,.25) inset, 0 15px 45px rgba(0,0,0,.45);
   background: radial-gradient(circle at 50% 0, rgba(86,180,255,.25), rgba(14,24,44,.95));
   text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.cinematic-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(86,180,255,.08), rgba(255,255,255,0));
+  animation: topBarSweep 4s linear infinite;
 }
 
 .cinematic-card h2 {
@@ -1598,6 +1727,15 @@ body.ambience-off #alert-routing-layer {
   margin-bottom: 12px;
 }
 
+#quest-board-view,
+#agent-roster-view,
+#reports-view,
+#upgrades-view {
+  background:
+    radial-gradient(circle at 50% 0, rgba(86,180,255,.08), transparent 22%),
+    linear-gradient(180deg, rgba(7,12,24,.94), rgba(5,10,19,.98));
+}
+
 .report-summary h2 {
   margin: 0 0 8px;
   font-size: 12px;
@@ -1645,8 +1783,22 @@ body.ambience-off #alert-routing-layer {
     grid-template-columns: 1fr;
   }
 
+  #hero-status-rack {
+    width: auto;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    left: 22px;
+    right: 22px;
+    top: auto;
+    bottom: 84px;
+  }
+
   #hq-side-panel {
     max-height: 38vh;
     overflow: auto;
+  }
+
+  #tactical-strip {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
