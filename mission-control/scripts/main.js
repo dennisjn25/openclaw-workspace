@@ -226,6 +226,85 @@ function bestSquadForQuest(quest) {
   return [...new Set(picks)].slice(0, 3);
 }
 
+function renderSquadBuilder(container) {
+  const slots = document.createElement('div');
+  slots.className = 'squad-slots';
+  slots.innerHTML = `
+    <h3>Squad Slots (drag agents into slots)</h3>
+    <div class="slot-row">
+      <div class="squad-slot" data-slot="0"></div>
+      <div class="squad-slot" data-slot="1"></div>
+      <div class="squad-slot" data-slot="2"></div>
+    </div>
+  `;
+
+  const fillSlots = () => {
+    slots.querySelectorAll('.squad-slot').forEach((slot, i) => {
+      const agentId = GAME_STATE.selectedAgents[i];
+      if (!agentId) {
+        slot.innerHTML = '<span>Empty</span>';
+      } else {
+        const a = AGENT_ROSTER[agentId];
+        slot.innerHTML = `<img src="${a.avatar}" alt="${a.name}"><b>${a.name}</b>`;
+      }
+    });
+    updateSynergyDisplay();
+  };
+
+  slots.querySelectorAll('.squad-slot').forEach(slot => {
+    slot.addEventListener('dragover', e => e.preventDefault());
+    slot.addEventListener('drop', e => {
+      e.preventDefault();
+      const agentId = e.dataTransfer.getData('text/plain');
+      if (!agentId) return;
+      const target = Number(slot.dataset.slot);
+      GAME_STATE.selectedAgents[target] = agentId;
+      GAME_STATE.selectedAgents = GAME_STATE.selectedAgents.filter(Boolean).slice(0, 3);
+      fillSlots();
+      renderDraggableAgents();
+    });
+  });
+
+  const agentPool = document.createElement('div');
+  agentPool.id = 'deploy-agent-selection';
+  agentPool.innerHTML = '<h3>Agent Pool</h3><div class="agent-pool"></div>';
+
+  const renderDraggableAgents = () => {
+    const pool = agentPool.querySelector('.agent-pool');
+    pool.innerHTML = '';
+    Object.values(AGENT_ROSTER).forEach(agent => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `agent-select-button ${GAME_STATE.selectedAgents.includes(agent.id) ? 'selected' : ''}`;
+      btn.draggable = true;
+      btn.innerHTML = `<img src="${agent.avatar}" alt="${agent.name}"><span>${agent.name}</span>`;
+
+      btn.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('text/plain', agent.id);
+      });
+
+      btn.addEventListener('click', () => {
+        const has = GAME_STATE.selectedAgents.includes(agent.id);
+        if (has) {
+          GAME_STATE.selectedAgents = GAME_STATE.selectedAgents.filter(id => id !== agent.id);
+        } else if (GAME_STATE.selectedAgents.length < 3) {
+          GAME_STATE.selectedAgents.push(agent.id);
+        } else {
+          GAME_STATE.selectedAgents[2] = agent.id;
+        }
+        fillSlots();
+        renderDraggableAgents();
+      });
+      pool.appendChild(btn);
+    });
+  };
+
+  container.appendChild(slots);
+  container.appendChild(agentPool);
+  fillSlots();
+  renderDraggableAgents();
+}
+
 function showMissionDetailModal(questId) {
   const quest = quests.find(q => q.id === questId);
   if (!quest) return;
@@ -243,32 +322,13 @@ function showMissionDetailModal(questId) {
 
   content.querySelector('#deploy-agent-selection')?.remove();
   content.querySelector('#synergy-display')?.remove();
-
-  const pickWrap = document.createElement('div');
-  pickWrap.id = 'deploy-agent-selection';
-  pickWrap.innerHTML = '<h3>Deploy Team</h3>';
-
-  Object.values(AGENT_ROSTER).forEach(agent => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = `agent-select-button ${GAME_STATE.selectedAgents.includes(agent.id) ? 'selected' : ''}`;
-    btn.innerHTML = `<img src="${agent.avatar}" alt="${agent.name}"><span>${agent.name}</span>`;
-    btn.addEventListener('click', () => {
-      const has = GAME_STATE.selectedAgents.includes(agent.id);
-      GAME_STATE.selectedAgents = has
-        ? GAME_STATE.selectedAgents.filter(id => id !== agent.id)
-        : [...GAME_STATE.selectedAgents, agent.id];
-      btn.classList.toggle('selected', !has);
-      updateSynergyDisplay();
-    });
-    pickWrap.appendChild(btn);
-  });
+  content.querySelector('.squad-slots')?.remove();
 
   const synergy = document.createElement('div');
   synergy.id = 'synergy-display';
 
   const deployBtn = document.getElementById('deploy-mission-button');
-  content.insertBefore(pickWrap, deployBtn);
+  renderSquadBuilder(content);
   content.insertBefore(synergy, deployBtn);
 
   updateSynergyDisplay();
@@ -289,7 +349,32 @@ function hideMissionDetailModal() {
   document.getElementById('mission-detail-modal')?.classList.remove('visible');
 }
 
-function handleDeployMission() {
+function calculateMissionGrade(quest, synergies) {
+  let score = 30;
+  score += Math.min(30, (GAME_STATE.selectedAgents.length || 0) * 10);
+  score += Math.min(30, synergies.length * 15);
+  if (quest.difficulty === 'hard') score += 10;
+  if (quest.urgency === 'high') score += 5;
+
+  if (score >= 95) return 'Legendary';
+  if (score >= 88) return 'SS';
+  if (score >= 78) return 'S';
+  if (score >= 65) return 'A';
+  if (score >= 50) return 'B';
+  if (score >= 35) return 'C';
+  return 'D';
+}
+
+async function playDeployCinematic(quest, grade) {
+  const overlay = document.getElementById('deploy-cinematic');
+  if (!overlay) return;
+  overlay.innerHTML = `<div class="cinematic-card"><h2>Launching Quest</h2><p>${quest.title}</p><p>Projected Grade: <strong>${grade}</strong></p></div>`;
+  overlay.classList.add('show');
+  await new Promise(resolve => setTimeout(resolve, 1400));
+  overlay.classList.remove('show');
+}
+
+async function handleDeployMission() {
   if (!GAME_STATE.selectedQuest) return;
 
   const q = GAME_STATE.selectedQuest;
@@ -299,7 +384,9 @@ function handleDeployMission() {
   GAME_STATE.crystals += q.reward.crystals || 0;
 
   const activeSynergy = calculateSynergy(GAME_STATE.selectedAgents);
-  const grade = activeSynergy.length > 0 ? 'S' : 'A';
+  const grade = calculateMissionGrade(q, activeSynergy);
+
+  await playDeployCinematic(q, grade);
 
   GAME_STATE.missionLog.unshift({
     questId: q.id,
@@ -312,7 +399,7 @@ function handleDeployMission() {
 
   GAME_STATE.activeAlerts.unshift({
     type: 'success',
-    message: `${q.title} deployed • Grade forecast ${grade}`,
+    message: `${q.title} deployed • Grade ${grade}`,
     at: Date.now()
   });
 
@@ -323,6 +410,8 @@ function handleDeployMission() {
   hideMissionDetailModal();
   switchScreen('mission-control-home');
   updateNavState('mission-control-home');
+  const msg = document.getElementById('global-status-message');
+  if (msg) msg.textContent = `Mission complete: ${q.title} • Grade ${grade}`;
 }
 
 function renderReports() {

@@ -557,6 +557,93 @@ body {
   color: var(--color-glow-emerald);
 }
 
+.squad-slots {
+  margin: 12px 0;
+  padding-top: 8px;
+  border-top: 1px dashed #365581;
+}
+
+.squad-slots h3 {
+  margin: 0 0 8px;
+  color: var(--color-accent-gold);
+  font-size: 12px;
+  font-family: var(--font-pixel);
+}
+
+.slot-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.squad-slot {
+  min-height: 64px;
+  border: 1px dashed #4f73aa;
+  border-radius: 10px;
+  background: rgba(15, 30, 55, .6);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 8px;
+}
+
+.squad-slot img {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: block;
+  margin: 0 auto 4px;
+}
+
+.squad-slot b,
+.squad-slot span {
+  font-size: 11px;
+  color: #d8e6ff;
+}
+
+.agent-pool {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.deploy-cinematic {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  background: rgba(3, 8, 18, .75);
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+
+.deploy-cinematic.show {
+  opacity: 1;
+}
+
+.cinematic-card {
+  min-width: 320px;
+  max-width: min(92vw, 700px);
+  padding: 22px;
+  border-radius: 14px;
+  border: 1px solid #5d88c4;
+  box-shadow: 0 0 0 2px rgba(86,180,255,.25) inset, 0 15px 45px rgba(0,0,0,.45);
+  background: radial-gradient(circle at 50% 0, rgba(86,180,255,.25), rgba(14,24,44,.95));
+  text-align: center;
+}
+
+.cinematic-card h2 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-family: var(--font-pixel);
+  color: var(--color-accent-gold);
+}
+
+.cinematic-card p {
+  margin: 8px 0;
+}
+
 .replay-list {
   margin: 10px 0 0;
   padding-left: 18px;
