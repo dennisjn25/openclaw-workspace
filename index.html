@@ -4,8 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yoshi's Mission Control HQ</title>
-    <link rel="stylesheet" href="mission-control/styles/main.css">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+        (() => {
+            const fallbackVersion = '2026.04.15.0802';
+            const forcedVersion = new URLSearchParams(window.location.search).get('v');
+            const version = forcedVersion || fallbackVersion;
+            window.__MC_VERSION__ = version;
+
+            const style = document.createElement('link');
+            style.rel = 'stylesheet';
+            style.href = `mission-control/styles/main.css?v=${encodeURIComponent(version)}`;
+            document.head.appendChild(style);
+
+            window.addEventListener('load', async () => {
+                try {
+                    if ('serviceWorker' in navigator) {
+                        const regs = await navigator.serviceWorker.getRegistrations();
+                        await Promise.all(
+                            regs
+                                .filter(reg => reg.scope.includes('/openclaw-workspace/'))
+                                .map(reg => reg.unregister())
+                        );
+                    }
+
+                    if ('caches' in window) {
+                        const keys = await caches.keys();
+                        await Promise.all(
+                            keys
+                                .filter(key => /openclaw|mission|workbox|webpack|vite/i.test(key))
+                                .map(key => caches.delete(key))
+                        );
+                    }
+                } catch (error) {
+                    console.warn('Cache reset skipped:', error);
+                }
+            });
+        })();
+    </script>
 </head>
 <body>
     <div id="game-container">
@@ -177,9 +213,13 @@
         </div>
 
         <div id="deploy-cinematic" class="deploy-cinematic" aria-live="polite"></div>
+        <div id="build-version-badge" class="build-version-badge" aria-label="Build version"></div>
 
     </div>
 
-    <script type="module" src="mission-control/scripts/main.js"></script>
+    <script type="module">
+        const version = window.__MC_VERSION__ || '2026.04.15.0802';
+        import(`./mission-control/scripts/main.js?v=${encodeURIComponent(version)}`);
+    </script>
 </body>
 </html>

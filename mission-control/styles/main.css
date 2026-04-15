@@ -44,6 +44,21 @@ body {
   overflow: hidden;
 }
 
+.build-version-badge {
+  position: fixed;
+  right: 10px;
+  bottom: 8px;
+  z-index: 160;
+  font-size: 10px;
+  font-family: var(--font-pixel);
+  color: #b4caee;
+  background: rgba(8, 16, 30, .76);
+  border: 1px solid #385580;
+  border-radius: 8px;
+  padding: 5px 8px;
+  pointer-events: none;
+}
+
 .screen {
   position: absolute;
   inset: 0;

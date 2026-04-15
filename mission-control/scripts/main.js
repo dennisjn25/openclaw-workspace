@@ -1400,6 +1400,12 @@ async function init() {
   if (audioToggle) audioToggle.checked = IMMERSION_STATE.uiAudio;
   document.body.classList.toggle('ambience-off', !IMMERSION_STATE.ambienceFx);
 
+  const badge = document.getElementById('build-version-badge');
+  if (badge) {
+    const version = window.__MC_VERSION__ || 'dev';
+    badge.textContent = `Build ${version}`;
+  }
+
   switchScreen(GAME_STATE.currentScreen);
   bindEvents();
   GAME_STATE.activeAlerts.push({ type: 'info', message: 'Mission Control online. Quest board synchronized.', at: Date.now() });
