@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "groupId": "-1003620241899",
+  "groupName": "Joshy's Agent Den",
+  "limits": {
+    "maxOpenTopics": 5
+  },
+  "defaults": {
+    "topicState": "open",
+    "topicOwnerRequiredForWork": true,
+    "socialTopicOwnerRequired": false,
+    "autoCloseStaleTopicsFirst": true,
+    "preferMainChatForShortExchanges": true,
+    "preferTopicForMultiAgentWork": true
+  },
+  "decisionThresholds": {
+    "promoteToTopicScore": 3,
+    "forceTopicScore": 5,
+    "shortExchangeMaxMessages": 3,
+    "dormantAfterHours": 48,
+    "staleAfterHours": 168
+  },
+  "signals": {
+    "createTopic": [
+      "ongoing_discussion",
+      "multi_agent_needed",
+      "blocker_present",
+      "decision_needed",
+      "project_specific",
+      "follow_up_expected",
+      "lesson_capture_needed",
+      "cluttering_main_chat",
+      "meaningful_social_thread"
+    ],
+    "keepInMainChat": [
+      "short_exchange",
+      "informational_only",
+      "quick_update",
+      "single_responder",
+      "lightweight_social",
+      "no_focused_collaboration_needed"
+    ]
+  },
+  "weights": {
+    "ongoing_discussion": 1,
+    "multi_agent_needed": 2,
+    "blocker_present": 3,
+    "decision_needed": 2,
+    "project_specific": 1,
+    "follow_up_expected": 1,
+    "lesson_capture_needed": 2,
+    "cluttering_main_chat": 2,
+    "meaningful_social_thread": 1,
+    "short_exchange": -2,
+    "informational_only": -2,
+    "quick_update": -1,
+    "single_responder": -1,
+    "lightweight_social": -1,
+    "no_focused_collaboration_needed": -2
+  },
+  "priorityOrder": [
+    "urgent_blocker",
+    "active_delivery",
+    "design_review",
+    "lesson_capture",
+    "healthy_social"
+  ],
+  "topicTypes": {
+    "work": {
+      "requiresOwner": true,
+      "allowedPurposes": [
+        "project_progress",
+        "blocker_resolution",
+        "debugging",
+        "design_decision",
+        "review",
+        "planning",
+        "retrospective",
+        "lesson_learned",
+        "coordination"
+      ]
+    },
+    "social": {
+      "requiresOwner": false,
+      "allowedPurposes": [
+        "casual_conversation",
+        "friend_chat",
+        "relationship_building",
+        "recurring_side_chat"
+      ]
+    }
+  },
+  "assignment": {
+    "maxSuggestedAgents": 6,
+    "factors": [
+      "subject_relevance",
+      "role_responsibility",
+      "project_involvement",
+      "expertise",
+      "review_authority",
+      "collaboration_history"
+    ],
+    "avoid": [
+      "availability_only",
+      "irrelevant_participants"
+    ]
+  },
+  "closure": {
+    "closeReasons": [
+      "resolved",
+      "decision_made",
+      "phase_complete",
+      "lesson_captured",
+      "social_thread_finished",
+      "inactive",
+      "capacity_reclaim"
+    ],
+    "dormantReasons": [
+      "no_recent_meaningful_activity",
+      "paused_without_next_action",
+      "social_momentum_faded"
+    ]
+  }
+}
