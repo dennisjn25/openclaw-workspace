@@ -230,6 +230,24 @@ body.ambience-off #ambience-layer {
   animation: stationPulse 1.6s ease-in-out infinite;
 }
 
+.agent-station-icon.station-state-idle {
+  border-color: rgba(159, 177, 216, .7);
+}
+
+.agent-station-icon.station-state-standby {
+  border-color: rgba(86, 180, 255, .85);
+}
+
+.agent-station-icon.station-state-active,
+.agent-station-icon.station-state-review {
+  border-color: rgba(106, 210, 123, .95);
+}
+
+.agent-station-icon.station-state-critical {
+  border-color: rgba(255, 143, 143, .95);
+  box-shadow: 0 0 0 3px rgba(255,157,77,.28), 0 0 24px rgba(255,143,143,.75);
+}
+
 @keyframes stationPulse {
   0% { box-shadow: 0 0 0 3px rgba(86,180,255,.15), 0 0 18px rgba(68,243,178,.35); }
   50% { box-shadow: 0 0 0 3px rgba(255,209,102,.55), 0 0 30px rgba(255,157,77,.55); }
@@ -667,6 +685,27 @@ body.ambience-off #ambience-layer {
   margin: 2px 0;
   font-size: 12px;
   color: var(--color-text-secondary);
+}
+
+.agent-state-pill {
+  display: inline-block;
+  margin-left: 2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #47699f;
+  background: rgba(20, 38, 66, .72);
+  color: #dce9ff;
+  font-size: 10px;
+}
+
+.agent-card.state-critical {
+  border-color: rgba(255, 143, 143, .6);
+  box-shadow: 0 0 0 1px rgba(255, 143, 143, .28) inset, 0 8px 28px rgba(0,0,0,.35);
+}
+
+.agent-card.state-active,
+.agent-card.state-review {
+  border-color: rgba(106, 210, 123, .55);
 }
 
 .agent-meters label {

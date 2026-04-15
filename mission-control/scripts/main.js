@@ -235,10 +235,45 @@ function getHotAgents() {
   return hot;
 }
 
+function getAgentMissionState(agentId) {
+  const related = quests.filter(q => (q.recommendedAgents || []).includes(agentId));
+  if (!related.length) return 'idle';
+
+  const critical = related.some(q =>
+    (q.status === 'in_progress' || q.status === 'review') && (q.urgency === 'high' || q.risk === 'high')
+  );
+  if (critical) return 'critical';
+  if (related.some(q => q.status === 'review')) return 'review';
+  if (related.some(q => q.status === 'in_progress')) return 'active';
+  if (related.some(q => q.status === 'backlog')) return 'standby';
+  return 'idle';
+}
+
+function humanizeAgentState(state) {
+  const map = {
+    critical: 'Critical',
+    review: 'Review',
+    active: 'In Mission',
+    standby: 'Standby',
+    idle: 'Idle'
+  };
+  return map[state] || 'Idle';
+}
+
+function syncAgentStatuses() {
+  Object.values(AGENT_ROSTER).forEach(agent => {
+    const state = getAgentMissionState(agent.id);
+    agent.missionState = state;
+    agent.status = humanizeAgentState(state);
+  });
+}
+
 function renderAgentStations() {
   const grid = document.getElementById('agent-stations-grid');
   if (!grid) return;
   grid.innerHTML = '';
+
+  syncAgentStatuses();
 
   const hotAgents = getHotAgents();
   Object.values(AGENT_ROSTER).forEach(agent => {
@@ -246,8 +281,9 @@ function renderAgentStations() {
     card.className = 'agent-station-icon';
     card.type = 'button';
     card.style.backgroundImage = `url(${agent.avatar})`;
-    card.title = `${agent.name} • ${agent.roomTheme}`;
+    card.title = `${agent.name} • ${agent.roomTheme} • ${agent.status}`;
     card.dataset.agentId = agent.id;
+    card.classList.add(`station-state-${agent.missionState || 'idle'}`);
     if (hotAgents.has(agent.id)) card.classList.add('is-hot');
     card.addEventListener('click', () => openRoomOverlay(agent.id));
     grid.appendChild(card);
@@ -255,6 +291,7 @@ function renderAgentStations() {
 }
 
 function openRoomOverlay(agentId) {
+  syncAgentStatuses();
   const agent = AGENT_ROSTER[agentId];
   if (!agent) return;
 
@@ -451,19 +488,21 @@ function renderAgentRoster(focusAgentId = null) {
   if (!grid) return;
   grid.innerHTML = '';
 
+  syncAgentStatuses();
+
   const agents = Object.values(AGENT_ROSTER);
   agents.sort((a, b) => (a.id === focusAgentId ? -1 : b.id === focusAgentId ? 1 : a.name.localeCompare(b.name)));
 
   agents.forEach(agent => {
     const selected = GAME_STATE.selectedAgents.includes(agent.id);
     const card = document.createElement('article');
-    card.className = `agent-card hud-panel ${selected ? 'selected' : ''}`;
+    card.className = `agent-card hud-panel state-${agent.missionState || 'idle'} ${selected ? 'selected' : ''}`;
     card.innerHTML = `
       <div class="agent-head">
         <img src="${agent.avatar}" alt="${agent.name}">
         <div>
           <h3>${agent.name}</h3>
-          <p>${agent.role} • Lv ${agent.level}</p>
+          <p>${agent.role} • Lv ${agent.level} • <span class="agent-state-pill">${agent.status}</span></p>
           <p>${agent.roomTheme}</p>
         </div>
       </div>
@@ -497,18 +536,24 @@ function renderHqSystems() {
   const panel = document.getElementById('hq-systems-summary');
   if (!panel) return;
 
+  syncAgentStatuses();
+
   const agents = Object.values(AGENT_ROSTER);
   const avgEnergy = Math.round(agents.reduce((acc, a) => acc + (a.energy || 0), 0) / Math.max(agents.length, 1));
   const avgBond = Math.round(agents.reduce((acc, a) => acc + (a.affinity || 0), 0) / Math.max(agents.length, 1));
   const activeCount = quests.filter(q => q.status === 'in_progress').length;
   const reviewCount = quests.filter(q => q.status === 'review').length;
   const alertScore = Math.min(100, GAME_STATE.activeAlerts.length * 8);
+  const criticalStations = agents.filter(a => a.missionState === 'critical').length;
+  const activeStations = agents.filter(a => a.missionState === 'active' || a.missionState === 'review').length;
 
   panel.innerHTML = `
     <div class="system-line"><span>Power Grid</span><b>${avgEnergy}%</b></div>
     <div class="system-line"><span>Guild Cohesion</span><b>${avgBond}%</b></div>
     <div class="system-line"><span>Live Deployments</span><b>${activeCount}</b></div>
     <div class="system-line"><span>Review Queue</span><b>${reviewCount}</b></div>
+    <div class="system-line"><span>Active Stations</span><b>${activeStations}</b></div>
+    <div class="system-line ${criticalStations > 0 ? 'warning' : ''}"><span>Critical Stations</span><b>${criticalStations}</b></div>
     <div class="system-line ${alertScore >= 50 ? 'warning' : ''}"><span>Alert Pressure</span><b>${alertScore}%</b></div>
   `;
 }
