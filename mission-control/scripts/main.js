@@ -249,6 +249,23 @@ function getAgentMissionState(agentId) {
   return 'idle';
 }
 
+function getAgentThreatTier(agentId) {
+  const activeRelated = quests.filter(q =>
+    (q.recommendedAgents || []).includes(agentId)
+    && (q.status === 'in_progress' || q.status === 'review')
+  );
+
+  if (!activeRelated.length) return 'none';
+
+  const severeSignals = activeRelated.filter(q => q.urgency === 'high' && q.risk === 'high').length;
+  const highSignals = activeRelated.filter(q => q.urgency === 'high' || q.risk === 'high').length;
+
+  if (severeSignals >= 2 || highSignals >= 3) return 'systemic';
+  if (severeSignals >= 1) return 'severe';
+  if (highSignals >= 1) return 'high';
+  return 'none';
+}
+
 function humanizeAgentState(state) {
   const map = {
     critical: 'Critical',
@@ -263,7 +280,9 @@ function humanizeAgentState(state) {
 function syncAgentStatuses() {
   Object.values(AGENT_ROSTER).forEach(agent => {
     const state = getAgentMissionState(agent.id);
+    const threatTier = getAgentThreatTier(agent.id);
     agent.missionState = state;
+    agent.threatTier = threatTier;
     agent.status = humanizeAgentState(state);
   });
 }
@@ -283,7 +302,9 @@ function renderAgentStations() {
     card.style.backgroundImage = `url(${agent.avatar})`;
     card.title = `${agent.name} • ${agent.roomTheme} • ${agent.status}`;
     card.dataset.agentId = agent.id;
+    card.dataset.threatTier = agent.threatTier || 'none';
     card.classList.add(`station-state-${agent.missionState || 'idle'}`);
+    if (agent.threatTier && agent.threatTier !== 'none') card.classList.add(`station-threat-${agent.threatTier}`);
     if (hotAgents.has(agent.id)) card.classList.add('is-hot');
     card.addEventListener('click', () => openRoomOverlay(agent.id));
     grid.appendChild(card);
@@ -331,12 +352,13 @@ function renderAlertRoutingLayer() {
     const ctrlY = Math.min(startY, endY) - 24;
 
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('class', 'alert-route');
+    const tier = node.dataset.threatTier || 'high';
+    path.setAttribute('class', `alert-route route-tier-${tier}`);
     path.setAttribute('d', `M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}`);
     svg.appendChild(path);
 
     const nodeDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    nodeDot.setAttribute('class', 'alert-route-node');
+    nodeDot.setAttribute('class', `alert-route-node route-tier-${tier}`);
     nodeDot.setAttribute('cx', `${endX}`);
     nodeDot.setAttribute('cy', `${endY}`);
     nodeDot.setAttribute('r', '3.4');
@@ -357,7 +379,7 @@ function openRoomOverlay(agentId) {
 
   if (title) title.textContent = `${agent.roomTheme} • ${agent.name}`;
   if (role) role.textContent = `${agent.role} • Level ${agent.level}`;
-  if (status) status.textContent = `Status: ${agent.status} • Energy ${agent.energy} • Bond ${agent.affinity}`;
+  if (status) status.textContent = `Status: ${agent.status} • Threat ${agent.threatTier || 'none'} • Energy ${agent.energy} • Bond ${agent.affinity}`;
   if (tags) tags.innerHTML = agent.specialties.map(tag => `<span>${tag}</span>`).join('');
 
   if (overlay) {
@@ -556,7 +578,7 @@ function renderAgentRoster(focusAgentId = null) {
         <img src="${agent.avatar}" alt="${agent.name}">
         <div>
           <h3>${agent.name}</h3>
-          <p>${agent.role} • Lv ${agent.level} • <span class="agent-state-pill">${agent.status}</span></p>
+          <p>${agent.role} • Lv ${agent.level} • <span class="agent-state-pill threat-${agent.threatTier || 'none'}">${agent.status}</span></p>
           <p>${agent.roomTheme}</p>
         </div>
       </div>

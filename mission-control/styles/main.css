@@ -188,10 +188,36 @@ body {
   filter: drop-shadow(0 0 5px rgba(255, 157, 77, .65));
 }
 
+.alert-route.route-tier-high {
+  stroke: rgba(255, 157, 77, .95);
+  stroke-width: 2.2;
+  animation-duration: 1.05s;
+  filter: drop-shadow(0 0 5px rgba(255, 157, 77, .65));
+}
+
+.alert-route.route-tier-severe {
+  stroke: rgba(255, 95, 95, .95);
+  stroke-width: 2.8;
+  animation-duration: .78s;
+  filter: drop-shadow(0 0 8px rgba(255, 95, 95, .72));
+}
+
+.alert-route.route-tier-systemic {
+  stroke: rgba(191, 122, 255, .96);
+  stroke-width: 3.2;
+  stroke-dasharray: 10 7;
+  animation-duration: .56s;
+  filter: drop-shadow(0 0 11px rgba(191, 122, 255, .85));
+}
+
 .alert-route-node {
   fill: rgba(255, 209, 102, .95);
   animation: routeNodeBlink 0.95s ease-in-out infinite;
 }
+
+.alert-route-node.route-tier-high { fill: rgba(255, 209, 102, .96); }
+.alert-route-node.route-tier-severe { fill: rgba(255, 129, 129, .97); }
+.alert-route-node.route-tier-systemic { fill: rgba(207, 153, 255, .98); }
 
 @keyframes routePulse {
   from { stroke-dashoffset: 0; opacity: .72; }
@@ -282,6 +308,18 @@ body.ambience-off #alert-routing-layer {
 .agent-station-icon.station-state-critical {
   border-color: rgba(255, 143, 143, .95);
   box-shadow: 0 0 0 3px rgba(255,157,77,.28), 0 0 24px rgba(255,143,143,.75);
+}
+
+.agent-station-icon.station-threat-high {
+  box-shadow: 0 0 0 3px rgba(255,157,77,.25), 0 0 22px rgba(255,157,77,.48);
+}
+
+.agent-station-icon.station-threat-severe {
+  box-shadow: 0 0 0 3px rgba(255,95,95,.3), 0 0 26px rgba(255,95,95,.62);
+}
+
+.agent-station-icon.station-threat-systemic {
+  box-shadow: 0 0 0 3px rgba(191,122,255,.33), 0 0 30px rgba(191,122,255,.72);
 }
 
 @keyframes stationPulse {
@@ -732,6 +770,21 @@ body.ambience-off #alert-routing-layer {
   background: rgba(20, 38, 66, .72);
   color: #dce9ff;
   font-size: 10px;
+}
+
+.agent-state-pill.threat-high {
+  border-color: rgba(255,157,77,.55);
+  color: #ffd7b1;
+}
+
+.agent-state-pill.threat-severe {
+  border-color: rgba(255,95,95,.65);
+  color: #ffc2c2;
+}
+
+.agent-state-pill.threat-systemic {
+  border-color: rgba(191,122,255,.7);
+  color: #e4c8ff;
 }
 
 .agent-card.state-critical {
