@@ -294,6 +294,24 @@ body {
 .alert-success { color: #7df0a2; }
 .alert-info { color: #8bc9ff; }
 .alert-warning { color: #ffbe6b; }
+.alert-danger { color: #ff8f8f; }
+
+#advisor-panel p {
+  margin: 6px 0 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #d6e6ff;
+}
+
+.risk-spike {
+  animation: riskPulse 0.8s ease;
+}
+
+@keyframes riskPulse {
+  0% { box-shadow: 0 0 0 rgba(255, 143, 143, 0); }
+  50% { box-shadow: 0 0 20px rgba(255, 143, 143, .5); }
+  100% { box-shadow: 0 0 0 rgba(255, 143, 143, 0); }
+}
 
 #hud-bottom-bar {
   margin: 0 var(--spacing-md) var(--spacing-md);

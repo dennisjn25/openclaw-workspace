@@ -13,6 +13,18 @@ const UPGRADE_CATALOG = [
   { id: 'healing_grove_halo', name: 'Grove Halo', costCredits: 80, costCrystals: 1, effect: 'Lower recovery time', room: 'Healing Grove' }
 ];
 
+const LIVE_EVENT_TYPES = [
+  'mission stuck',
+  'urgent task spike',
+  'creative breakthrough',
+  'risk alert',
+  'trend spike',
+  'energy low',
+  'recovery needed'
+];
+
+let eventSimulationTimer = null;
+
 function switchScreen(screenId) {
   document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
   const next = document.getElementById(screenId);
@@ -291,10 +303,124 @@ function renderActiveMissions() {
     : '<li>No missions in progress.</li>';
 }
 
+function updateAdvisorRecommendation() {
+  const node = document.getElementById('advisor-recommendation');
+  if (!node) return;
+
+  const targetQuest = quests.find(q => q.status === 'in_progress') || quests.find(q => q.status === 'backlog' || q.status === 'review');
+  if (!targetQuest) {
+    node.textContent = 'No mission available for analysis.';
+    return;
+  }
+
+  const squad = recommendBestSquad(targetQuest);
+  const synergy = calculateSynergy(squad);
+  const names = squad.map(id => AGENT_ROSTER[id]?.name || id).join(', ');
+  const synergyText = synergy.length ? `Synergy: ${synergy.map(s => s.name).join(' + ')}` : 'No synergy combo yet';
+  node.textContent = `${targetQuest.title}: ${names}. ${synergyText}.`;
+}
+
+function simulateLiveEvent() {
+  if (!quests.length) return;
+
+  const pool = quests.filter(q => q.status === 'in_progress' || q.status === 'review' || q.status === 'backlog');
+  if (!pool.length) return;
+
+  const quest = pool[Math.floor(Math.random() * pool.length)];
+  const event = LIVE_EVENT_TYPES[Math.floor(Math.random() * LIVE_EVENT_TYPES.length)];
+
+  if (event === 'mission stuck') {
+    quest.risk = 'high';
+    quest.urgency = 'high';
+    if (quest.status === 'in_progress') quest.status = 'review';
+  }
+
+  if (event === 'creative breakthrough') {
+    quest.reward.xp += 15;
+    quest.reward.credits += 5;
+  }
+
+  if (event === 'energy low') {
+    quest.estimatedDuration = `${Math.max(2, parseInt(quest.estimatedDuration, 10) || 2)}h`;
+  }
+
+  if (event === 'trend spike') {
+    quest.urgency = 'high';
+  }
+
+  GAME_STATE.activeAlerts.unshift({
+    type: event.includes('risk') || event.includes('stuck') ? 'danger' : 'warning',
+    message: `${quest.title}: ${event}`,
+    at: Date.now()
+  });
+
+  document.getElementById('live-alerts-panel')?.classList.add('risk-spike');
+  setTimeout(() => document.getElementById('live-alerts-panel')?.classList.remove('risk-spike'), 850);
+
+  renderResourceHUD();
+  renderLiveAlerts();
+  renderActiveMissions();
+  updateAdvisorRecommendation();
+
+  if (GAME_STATE.currentScreen === 'quest-board-view') renderQuestBoard();
+}
+
+function startEventSimulation() {
+  if (eventSimulationTimer) return;
+  eventSimulationTimer = setInterval(simulateLiveEvent, 18000);
+}
+
+function scoreAgentForQuest(agent, quest) {
+  let score = 0;
+  const text = `${quest.title} ${quest.description || ''}`.toLowerCase();
+  const spec = agent.specialties.join(' ').toLowerCase();
+
+  if (quest.recommendedAgents.includes(agent.id)) score += 16;
+  if (text.includes('risk') || text.includes('security')) {
+    if (spec.includes('threat') || spec.includes('research')) score += 10;
+  }
+  if (text.includes('creative') || text.includes('music') || text.includes('content')) {
+    if (spec.includes('concept') || spec.includes('production') || spec.includes('engagement')) score += 10;
+  }
+  if (text.includes('autom') || text.includes('workflow') || text.includes('code')) {
+    if (spec.includes('automation') || spec.includes('coding') || spec.includes('workflow')) score += 10;
+  }
+  score += Math.floor(agent.energy / 18);
+  score += Math.floor(agent.affinity / 24);
+  return score;
+}
+
+function recommendBestSquad(quest) {
+  const agents = Object.values(AGENT_ROSTER)
+    .map(agent => ({ agent, score: scoreAgentForQuest(agent, quest) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 7)
+    .map(x => x.agent.id);
+
+  let best = agents.slice(0, 3);
+  let bestScore = -Infinity;
+
+  for (let i = 0; i < agents.length; i += 1) {
+    for (let j = i + 1; j < agents.length; j += 1) {
+      for (let k = j + 1; k < agents.length; k += 1) {
+        const squad = [agents[i], agents[j], agents[k]];
+        const synergy = calculateSynergy(squad);
+        const base = squad.reduce((acc, id) => acc + scoreAgentForQuest(AGENT_ROSTER[id], quest), 0);
+        const score = base + (synergy.length * 25);
+        if (score > bestScore) {
+          best = squad;
+          bestScore = score;
+        }
+      }
+    }
+  }
+
+  if (!best.includes('kirby')) best[0] = 'kirby';
+  return [...new Set(best)].slice(0, 3);
+}
+
 function bestSquadForQuest(quest) {
-  const picks = quest.recommendedAgents.slice();
-  if (!picks.includes('kirby')) picks.unshift('kirby');
-  return [...new Set(picks)].slice(0, 3);
+  return recommendBestSquad(quest);
 }
 
 function renderSquadBuilder(container) {
@@ -501,6 +627,7 @@ async function handleDeployMission() {
   renderResourceHUD();
   renderLiveAlerts();
   renderActiveMissions();
+  updateAdvisorRecommendation();
   hideMissionDetailModal();
   switchScreen('mission-control-home');
   updateNavState('mission-control-home');
@@ -612,6 +739,7 @@ function bindEvents() {
     renderResourceHUD();
     renderLiveAlerts();
     renderActiveMissions();
+    updateAdvisorRecommendation();
     spawnBaseAmbience();
   });
 
@@ -629,6 +757,13 @@ function bindEvents() {
   document.getElementById('room-overlay-close')?.addEventListener('click', closeRoomOverlay);
   document.getElementById('room-overlay')?.addEventListener('click', (event) => {
     if (event.target.id === 'room-overlay') closeRoomOverlay();
+  });
+
+  document.getElementById('advisor-refresh')?.addEventListener('click', () => {
+    updateAdvisorRecommendation();
+    GAME_STATE.activeAlerts.unshift({ type: 'info', message: 'Kirby advisor refreshed squad logic.', at: Date.now() });
+    renderResourceHUD();
+    renderLiveAlerts();
   });
 
   document.getElementById('quick-deploy-button')?.addEventListener('click', () => {
@@ -654,6 +789,7 @@ function bindEvents() {
       });
       renderResourceHUD();
       renderLiveAlerts();
+      updateAdvisorRecommendation();
       const msg = document.getElementById('global-status-message');
       if (msg) msg.textContent = `Kirby suggests ${btn.textContent}. Team ready.`;
     });
@@ -671,7 +807,9 @@ async function init() {
   GAME_STATE.activeAlerts.push({ type: 'info', message: 'Mission Control online. Quest board synchronized.', at: Date.now() });
   renderResourceHUD();
   renderLiveAlerts();
+  updateAdvisorRecommendation();
   spawnBaseAmbience();
+  startEventSimulation();
 }
 
 init();
