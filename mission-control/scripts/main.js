@@ -4,6 +4,7 @@ import { AGENT_ROSTER, QUEST_CATEGORIES, GAME_STATE, loadQuests, saveQuests, cal
 let quests = [];
 let questFilter = null;
 const hudDisplay = { xp: 0, credits: 0, crystals: 0 };
+const expandedChildMissions = new Set();
 
 const UPGRADE_CATALOG = [
   { id: 'hq_console_mk2', name: 'HQ Console MK-II', costCredits: 120, costCrystals: 2, effect: '+10% command speed', room: 'HQ Desk' },
@@ -349,6 +350,43 @@ function countMissionProgress(mission) {
   };
 }
 
+function toggleChildMissionExpansion(subquestId) {
+  if (!subquestId) return;
+  if (expandedChildMissions.has(subquestId)) {
+    expandedChildMissions.delete(subquestId);
+  } else {
+    expandedChildMissions.add(subquestId);
+  }
+}
+
+function setChildMissionStep(subquestId, stepIndex, checked) {
+  const { mission, parentQuest, isSubquest } = getMissionById(subquestId);
+  if (!mission || !isSubquest) return;
+  const step = mission.subtasks?.[stepIndex];
+  if (!step) return;
+
+  step.done = checked;
+  const doneCount = (mission.subtasks || []).filter(item => item.done).length;
+  const totalCount = (mission.subtasks || []).length;
+  if (doneCount === totalCount && totalCount > 0) {
+    mission.status = 'done';
+  } else if (doneCount > 0) {
+    mission.status = 'in_progress';
+  } else {
+    mission.status = 'backlog';
+  }
+
+  syncIdeaQuestProgress(parentQuest);
+  saveRuntimeState();
+  renderQuestBoard();
+  renderIdeaFlowPanels();
+  renderActiveMissions();
+  renderHqSystems();
+  renderAgentStations();
+  renderThreatConsole();
+  updateAdvisorRecommendation();
+}
+
 function renderChildMissionCards(quest) {
   const subquests = getQuestSubquests(quest);
   if (!subquests.length) return '';
@@ -356,15 +394,32 @@ function renderChildMissionCards(quest) {
     <div class="child-mission-list">
       ${subquests.map(subquest => {
         const progress = countMissionProgress(subquest);
+        const expanded = expandedChildMissions.has(subquest.id);
         return `
-          <button type="button" class="child-mission-card" data-subquest-id="${subquest.id}">
-            <span class="child-mission-topline">
+          <div class="child-mission-card ${expanded ? 'expanded' : ''}" data-subquest-id="${subquest.id}">
+            <button type="button" class="child-mission-summary" data-subquest-id="${subquest.id}">
+              <span class="child-mission-topline">
               <strong>${subquest.title}</strong>
-              <span>${subquest.status.replace('_', ' ')}</span>
-            </span>
-            <span class="child-mission-meta">${AGENT_ROSTER[subquest.branchData?.lead]?.name || subquest.branchData?.lead || 'Branch lead'} • ${subquest.estimatedDuration}</span>
-            <span class="child-mission-progress"><i style="width:${progress.percent}%"></i></span>
-          </button>
+                <span>${subquest.status.replace('_', ' ')}</span>
+              </span>
+              <span class="child-mission-meta">${AGENT_ROSTER[subquest.branchData?.lead]?.name || subquest.branchData?.lead || 'Branch lead'} • ${subquest.estimatedDuration}</span>
+              <span class="child-mission-progress"><i style="width:${progress.percent}%"></i></span>
+            </button>
+            <div class="child-mission-actions">
+              <button type="button" class="child-mission-inline-action" data-open-subquest="${subquest.id}">Open</button>
+              <button type="button" class="child-mission-inline-action" data-toggle-subquest="${subquest.id}">${expanded ? 'Collapse' : 'Expand'}</button>
+            </div>
+            ${expanded ? `
+              <div class="child-mission-checklist">
+                ${(subquest.subtasks || []).map((step, index) => `
+                  <label class="child-mission-check">
+                    <input type="checkbox" data-step-toggle="${subquest.id}" data-step-index="${index}" ${step.done ? 'checked' : ''}>
+                    <span>${step.title}</span>
+                  </label>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
         `;
       }).join('')}
     </div>
@@ -469,7 +524,20 @@ function renderIdeaFlowPanels() {
   `;
 
   kirbyNode.querySelectorAll('.child-mission-card').forEach(button => {
-    button.addEventListener('click', () => showMissionDetailModal(button.dataset.subquestId));
+    button.querySelector('[data-open-subquest]')?.addEventListener('click', () => showMissionDetailModal(button.dataset.subquestId));
+    button.querySelector('[data-toggle-subquest]')?.addEventListener('click', () => {
+      toggleChildMissionExpansion(button.dataset.subquestId);
+      renderIdeaFlowPanels();
+    });
+    button.querySelector('.child-mission-summary')?.addEventListener('click', () => {
+      toggleChildMissionExpansion(button.dataset.subquestId);
+      renderIdeaFlowPanels();
+    });
+    button.querySelectorAll('[data-step-toggle]').forEach(input => {
+      input.addEventListener('change', event => {
+        setChildMissionStep(input.dataset.stepToggle, Number(input.dataset.stepIndex), event.target.checked);
+      });
+    });
   });
 
   statusNode.textContent = `Selphie polished “${flow.idea.title}” and handed it to Kirby for orchestration.`;
@@ -488,7 +556,7 @@ function handleIdeaIntake(event) {
   const quest = buildIdeaQuest(idea, polish, orchestration);
 
   quests.unshift(quest);
-  GAME_STATE.ideaFlow = { idea, polish, orchestration, questId: quest.id };
+  GAME_STATE.ideaFlow = { ...quest.ideaFlow };
   questFilter = null;
 
   saveRuntimeState();
@@ -1020,10 +1088,28 @@ function renderQuestBoard() {
 
     card.querySelector('.view-mission-details')?.addEventListener('click', () => showMissionDetailModal(quest.id));
     card.querySelectorAll('.child-mission-card').forEach(button => {
-      button.addEventListener('click', (event) => {
+      button.querySelector('.child-mission-summary')?.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleChildMissionExpansion(button.dataset.subquestId);
+        renderQuestBoard();
+      });
+      button.querySelector('[data-open-subquest]')?.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
         showMissionDetailModal(button.dataset.subquestId);
+      });
+      button.querySelector('[data-toggle-subquest]')?.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleChildMissionExpansion(button.dataset.subquestId);
+        renderQuestBoard();
+      });
+      button.querySelectorAll('[data-step-toggle]').forEach(input => {
+        input.addEventListener('change', event => {
+          event.stopPropagation();
+          setChildMissionStep(input.dataset.stepToggle, Number(input.dataset.stepIndex), event.target.checked);
+        });
       });
     });
     list.appendChild(card);
