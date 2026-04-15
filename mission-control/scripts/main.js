@@ -649,6 +649,7 @@ function renderAgentRoster(focusAgentId = null) {
     const selected = GAME_STATE.selectedAgents.includes(agent.id);
     const card = document.createElement('article');
     card.className = `agent-card hud-panel state-${agent.missionState || 'idle'} ${selected ? 'selected' : ''}`;
+    card.dataset.agentId = agent.id;
     card.innerHTML = `
       <div class="agent-head">
         <img src="${agent.avatar}" alt="${agent.name}">

@@ -87,6 +87,7 @@ body {
 
 #mission-control-home {
   padding: 0;
+  height: 100%;
 }
 
 #hud-top-bar {
@@ -174,6 +175,8 @@ body {
   gap: var(--spacing-md);
   padding: var(--spacing-md);
   min-height: 0;
+  overflow: hidden;
+  align-items: stretch;
 }
 
 #base-map-area {
@@ -184,7 +187,8 @@ body {
   background:
     radial-gradient(circle at 50% 48%, rgba(139, 86, 255, .14), transparent 28%),
     radial-gradient(circle at 30% 30%, rgba(68,243,178,.12), rgba(0,0,0,.3));
-  min-height: 690px;
+  min-height: clamp(520px, calc(100vh - 250px), 760px);
+  height: 100%;
   box-shadow: inset 0 0 80px rgba(3, 8, 20, .55), 0 0 40px rgba(68,243,178,.06);
 }
 
@@ -391,6 +395,14 @@ body.ambience-off #alert-routing-layer {
   clip-path: polygon(14% 0, 86% 0, 100% 14%, 100% 86%, 86% 100%, 14% 100%, 0 86%, 0 14%);
   transform: translate(-50%, -50%);
   overflow: visible;
+}
+
+.agent-station-icon[data-agent-id='zelda'] {
+  background-position: center 14%;
+}
+
+.agent-station-icon[data-agent-id='squall'] {
+  background-position: center 18%;
 }
 
 .agent-station-icon:hover {
@@ -644,9 +656,11 @@ body.ambience-off #alert-routing-layer {
   flex-direction: column;
   gap: var(--spacing-md);
   min-height: 0;
+  max-height: 100%;
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
   clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+  padding-bottom: 80px;
 }
 
 #hq-side-panel::before {
@@ -657,9 +671,23 @@ body.ambience-off #alert-routing-layer {
   pointer-events: none;
 }
 
+#hq-side-panel::-webkit-scrollbar {
+  width: 10px;
+}
+
+#hq-side-panel::-webkit-scrollbar-thumb {
+  background: rgba(86,180,255,.24);
+  border-radius: 999px;
+}
+
 #main-navigation {
   display: grid;
   gap: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding-bottom: 6px;
+  background: linear-gradient(180deg, rgba(10,18,34,.96), rgba(10,18,34,.82), rgba(10,18,34,0));
 }
 
 .nav-button {
@@ -956,6 +984,8 @@ body.ambience-off #alert-routing-layer {
 #hud-bottom-bar {
   margin: 0 var(--spacing-md) var(--spacing-md);
   padding: 10px 14px;
+  position: relative;
+  z-index: 12;
 }
 
 #global-status-message {
@@ -1238,6 +1268,15 @@ body.ambience-off #alert-routing-layer {
   border-radius: 999px;
   border: 2px solid #6ad27b;
   background: #1a2f52;
+  object-fit: cover;
+}
+
+.agent-card[data-agent-id='zelda'] .agent-head img {
+  object-position: center 14%;
+}
+
+.agent-card[data-agent-id='squall'] .agent-head img {
+  object-position: center 18%;
 }
 
 .agent-head h3 {
@@ -1781,6 +1820,7 @@ body.ambience-off #alert-routing-layer {
 @media (max-width: 1100px) {
   #hq-main-view {
     grid-template-columns: 1fr;
+    overflow: auto;
   }
 
   #hero-status-rack {
@@ -1793,8 +1833,9 @@ body.ambience-off #alert-routing-layer {
   }
 
   #hq-side-panel {
-    max-height: 38vh;
+    max-height: 42vh;
     overflow: auto;
+    padding-bottom: 20px;
   }
 
   #tactical-strip {
