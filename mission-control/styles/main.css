@@ -1350,6 +1350,47 @@ body.ambience-off #alert-routing-layer {
   accent-color: #6ad27b;
 }
 
+.child-mission-assignment-block {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.child-mission-assignment-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+  color: #b8cdf0;
+}
+
+.child-mission-assignment-head strong {
+  color: #f0f6ff;
+  text-align: right;
+}
+
+.child-mission-agent-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.child-mission-agent-pill {
+  border: 1px solid rgba(86, 180, 255, .28);
+  border-radius: 999px;
+  background: rgba(11, 22, 39, .92);
+  color: #d9e8ff;
+  padding: 5px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.child-mission-agent-pill.active {
+  border-color: rgba(106, 210, 123, .8);
+  background: rgba(24, 58, 45, .92);
+  color: #ecfff2;
+}
+
 .child-mission-progress,
 .mission-subquest-progress {
   display: block;
