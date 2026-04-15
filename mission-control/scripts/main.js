@@ -91,8 +91,12 @@ function loadRuntimeState() {
     GAME_STATE.missionLog = Array.isArray(state.missionLog) ? state.missionLog : [];
     IMMERSION_STATE.ambienceFx = state.immersion?.ambienceFx ?? true;
     IMMERSION_STATE.uiAudio = state.immersion?.uiAudio ?? true;
-    if (Array.isArray(state.quests) && state.quests.length) quests = state.quests;
-    GAME_STATE.ideaFlow = state.ideaFlow || null;
+    if (Array.isArray(state.quests) && state.quests.length) {
+      quests = state.quests.map(quest => quest.ideaFlow
+        ? { ...quest, ideaFlow: normalizeIdeaFlow(quest.ideaFlow) }
+        : quest);
+    }
+    GAME_STATE.ideaFlow = normalizeIdeaFlow(state.ideaFlow) || null;
   } catch (error) {
     console.warn('State load skipped:', error);
   }
@@ -100,6 +104,25 @@ function loadRuntimeState() {
 
 function createIdeaFlowId() {
   return `idea_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+}
+
+function normalizeIdeaFlow(flow) {
+  if (!flow?.idea || !flow?.polish || !flow?.orchestration) return flow;
+  if (Array.isArray(flow.orchestration.branches) && flow.orchestration.branches.length) return flow;
+
+  const orchestration = buildKirbyOrchestration(flow.idea, flow.polish);
+  return {
+    ...flow,
+    orchestration: {
+      ...flow.orchestration,
+      ...orchestration,
+      primaryBranch: orchestration.primaryBranch,
+      branches: orchestration.branches,
+      commandNote: orchestration.commandNote,
+      phases: orchestration.phases,
+      squad: flow.orchestration.squad || orchestration.squad
+    }
+  };
 }
 
 function summarizeIdea(text = '') {
@@ -156,34 +179,129 @@ function inferProductionTrack(text = '') {
   return 'Main Quest';
 }
 
+function getKirbyBranchCatalog() {
+  return {
+    product_build: {
+      id: 'product_build',
+      label: 'Product Build',
+      lead: 'tails',
+      support: ['mario', 'zelda'],
+      keywords: ['app', 'platform', 'dashboard', 'mobile', 'web', 'product', 'saas', 'tool', 'feature', 'ui', 'ux'],
+      summary: 'Turns the concept into scoped features, system design, and a first build path.',
+      phases: ['Scope the MVP surface', 'Map the system and UX flow', 'Build the first deployable version'],
+      type: 'main_quests'
+    },
+    launch: {
+      id: 'launch',
+      label: 'Launch',
+      lead: 'sonic',
+      support: ['rinoa', 'peach'],
+      keywords: ['launch', 'campaign', 'go to market', 'go-to-market', 'promotion', 'audience', 'traffic', 'distribution'],
+      summary: 'Prepares momentum, activation, and rollout for release.',
+      phases: ['Define the launch angle', 'Build the rollout sequence', 'Trigger momentum and distribution'],
+      type: 'main_quests'
+    },
+    content: {
+      id: 'content',
+      label: 'Content',
+      lead: 'rinoa',
+      support: ['peach', 'selphie'],
+      keywords: ['content', 'brand', 'messaging', 'copy', 'story', 'social', 'creative', 'creator'],
+      summary: 'Shapes the narrative, messaging, and content assets around the idea.',
+      phases: ['Clarify the message', 'Create core assets and prompts', 'Prepare content for publishing'],
+      type: 'creative_missions'
+    },
+    automation: {
+      id: 'automation',
+      label: 'Automation',
+      lead: 'mario',
+      support: ['tails', 'kirby'],
+      keywords: ['automation', 'workflow', 'agent', 'system', 'integration', 'ops', 'process'],
+      summary: 'Converts the idea into repeatable systems, automations, and operating flows.',
+      phases: ['Identify manual drag', 'Design the handoff system', 'Deploy the automation chain'],
+      type: 'automation_missions'
+    },
+    research: {
+      id: 'research',
+      label: 'Research',
+      lead: 'link',
+      support: ['zelda', 'professor_oak'],
+      keywords: ['research', 'market', 'validate', 'discovery', 'analysis', 'insight', 'intel'],
+      summary: 'Generates evidence, market clarity, and strategic intelligence before execution.',
+      phases: ['Frame the key questions', 'Pull evidence and signal', 'Turn findings into direction'],
+      type: 'main_quests'
+    }
+  };
+}
+
+function detectKirbyBranches(text = '') {
+  const raw = text.toLowerCase();
+  const catalog = getKirbyBranchCatalog();
+  const ranked = Object.values(catalog)
+    .map(branch => ({
+      ...branch,
+      score: branch.keywords.reduce((acc, keyword) => acc + (raw.includes(keyword) ? 1 : 0), 0)
+    }))
+    .filter(branch => branch.score > 0)
+    .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label));
+
+  if (ranked.length === 0) {
+    return [catalog.product_build, catalog.research];
+  }
+
+  const branches = ranked.slice(0, 3);
+  if (!branches.some(branch => branch.id === 'product_build') && raw.match(/app|platform|product|tool|dashboard|mobile|web|feature/)) {
+    branches.unshift(catalog.product_build);
+  }
+  return [...new Map(branches.map(branch => [branch.id, branch])).values()].slice(0, 3);
+}
+
 function buildKirbyOrchestration(idea, polish) {
   const raw = `${idea.title} ${idea.summary} ${idea.goal}`.toLowerCase();
-  const squad = ['kirby', 'selphie'];
-  if (raw.includes('automation') || raw.includes('workflow') || raw.includes('agent')) squad.push('tails', 'mario');
-  if (raw.includes('brand') || raw.includes('launch') || raw.includes('content')) squad.push('rinoa', 'peach');
-  if (raw.includes('research') || raw.includes('market')) squad.push('link', 'zelda');
+  const selectedBranches = detectKirbyBranches(raw);
+  const primaryBranch = selectedBranches[0];
+  const squad = ['kirby', 'selphie', primaryBranch.lead, ...primaryBranch.support];
+  selectedBranches.slice(1).forEach(branch => {
+    squad.push(branch.lead, ...branch.support.slice(0, 1));
+  });
   if (squad.length < 4) squad.push('zelda');
+
+  const branchPlans = selectedBranches.map((branch, index) => ({
+    id: branch.id,
+    label: branch.label,
+    summary: branch.summary,
+    lead: branch.lead,
+    support: branch.support,
+    type: branch.type,
+    priority: index + 1,
+    phases: branch.phases.map((phase, phaseIndex) => `${index + 1}.${phaseIndex + 1} ${phase}`)
+  }));
+
+  const branchLine = branchPlans.map(branch => branch.label).join(' → ');
 
   return {
     track: inferProductionTrack(raw),
+    primaryBranch: primaryBranch.label,
+    branches: branchPlans,
     squad: [...new Set(squad)].slice(0, 5),
     phases: [
       `Selphie refines the concept into a clear build brief around “${idea.title}.”`,
-      'Kirby assembles the squad, scope, and first deployment path.',
+      `Kirby routes the mission through ${branchLine}.`,
       `Team executes toward ${idea.goal || 'a polished first deliverable'}.`
     ],
-    commandNote: `Kirby is orchestrating ${idea.title} with Selphie as the creative lead.`
+    commandNote: `Kirby is orchestrating ${idea.title} with Selphie as the creative lead through the ${primaryBranch.label} branch.`
   };
 }
 
 function buildIdeaQuest(idea, polish, orchestration) {
   const recommendedAgents = orchestration.squad.slice(0, 3);
+  const questType = orchestration.branches[0]?.type || (orchestration.track === 'Automation Mission' ? 'automation_missions' : orchestration.track === 'Creative Mission' ? 'creative_missions' : 'main_quests');
   return {
     id: createIdeaFlowId(),
     title: idea.title,
     description: `${polish.spark} ${polish.value}`,
     status: 'backlog',
-    type: orchestration.track === 'Automation Mission' ? 'automation_missions' : orchestration.track === 'Creative Mission' ? 'creative_missions' : 'main_quests',
+    type: questType,
     difficulty: 'medium',
     urgency: idea.goal ? 'medium' : 'low',
     risk: 'medium',
@@ -192,8 +310,8 @@ function buildIdeaQuest(idea, polish, orchestration) {
     recommendedAgents,
     subtasks: [
       { title: 'Selphie polish pass', done: true },
-      { title: 'Kirby orchestration map', done: false },
-      { title: 'First production sprint', done: false }
+      { title: `Kirby routes ${orchestration.primaryBranch}`, done: true },
+      ...orchestration.branches.flatMap(branch => branch.phases.map(phase => ({ title: phase.replace(/^\d+\.\d+\s+/, ''), done: false })))
     ],
     comments: [
       { author: 'Selphie', text: polish.hook },
@@ -239,8 +357,17 @@ function renderIdeaFlowPanels() {
   kirbyNode.innerHTML = `
     <h3>${flow.orchestration.track}</h3>
     <p>${flow.orchestration.commandNote}</p>
+    <div class="branch-pill-row">${flow.orchestration.branches.map(branch => `<span class="branch-pill">P${branch.priority} ${branch.label}</span>`).join('')}</div>
     <p><strong>Squad:</strong> ${flow.orchestration.squad.map(id => AGENT_ROSTER[id]?.name || id).join(', ')}</p>
     <ol>${flow.orchestration.phases.map(item => `<li>${item}</li>`).join('')}</ol>
+    <div class="branch-route-list">
+      ${flow.orchestration.branches.map(branch => `
+        <div class="branch-route-card">
+          <p><strong>${branch.label}</strong> led by ${AGENT_ROSTER[branch.lead]?.name || branch.lead}</p>
+          <p>${branch.summary}</p>
+        </div>
+      `).join('')}
+    </div>
   `;
 
   statusNode.textContent = `Selphie polished “${flow.idea.title}” and handed it to Kirby for orchestration.`;
@@ -777,6 +904,9 @@ function renderQuestBoard() {
             <i></i>
             <span>Kirby orchestrating</span>
           </div>
+          <div class="quest-branch-chip-row">
+            ${quest.ideaFlow.orchestration.branches.map(branch => `<span class="quest-branch-chip">${branch.label}</span>`).join('')}
+          </div>
           <p class="quest-brief-line"><strong>Selphie:</strong> ${quest.ideaFlow.polish.spark}</p>
           <p class="quest-brief-line"><strong>Kirby:</strong> ${quest.ideaFlow.orchestration.commandNote}</p>
         ` : ''}
@@ -1259,7 +1389,7 @@ function showMissionDetailModal(questId) {
   const title = document.getElementById('mission-detail-title');
   const desc = document.getElementById('mission-detail-description');
   if (title) title.textContent = quest.title;
-  if (desc) desc.innerHTML = `${quest.description || 'No mission briefing.'}<br><br><strong>Difficulty:</strong> ${quest.difficulty.toUpperCase()}<br><strong>Duration:</strong> ${quest.estimatedDuration}${quest.ideaFlow ? `<br><br><strong>Selphie Polish:</strong> ${quest.ideaFlow.polish.value}<br><strong>Kirby Track:</strong> ${quest.ideaFlow.orchestration.track}<br><strong>Orchestration Phases:</strong> ${quest.ideaFlow.orchestration.phases.join(' → ')}` : ''}`;
+  if (desc) desc.innerHTML = `${quest.description || 'No mission briefing.'}<br><br><strong>Difficulty:</strong> ${quest.difficulty.toUpperCase()}<br><strong>Duration:</strong> ${quest.estimatedDuration}${quest.ideaFlow ? `<br><br><strong>Selphie Polish:</strong> ${quest.ideaFlow.polish.value}<br><strong>Kirby Track:</strong> ${quest.ideaFlow.orchestration.track}<br><strong>Primary Branch:</strong> ${quest.ideaFlow.orchestration.primaryBranch}<br><strong>Branch Routes:</strong> ${quest.ideaFlow.orchestration.branches.map(branch => `${branch.label} (${AGENT_ROSTER[branch.lead]?.name || branch.lead})`).join(' • ')}<br><strong>Orchestration Phases:</strong> ${quest.ideaFlow.orchestration.phases.join(' → ')}` : ''}`;
 
   const modal = document.getElementById('mission-detail-modal');
   const content = modal?.querySelector('.modal-content');

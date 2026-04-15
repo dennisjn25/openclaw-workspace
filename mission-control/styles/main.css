@@ -1203,6 +1203,43 @@ body.ambience-off #alert-routing-layer {
   padding: 0;
 }
 
+.branch-pill-row,
+.quest-branch-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.branch-pill,
+.quest-branch-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(86, 180, 255, .4);
+  background: rgba(17, 34, 59, .88);
+  color: #ddecff;
+  font-size: 11px;
+}
+
+.branch-route-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.branch-route-card {
+  border: 1px solid rgba(72, 104, 158, .48);
+  border-radius: 10px;
+  background: rgba(12, 23, 42, .72);
+  padding: 10px;
+}
+
+.branch-route-card p + p {
+  margin-top: 6px;
+}
+
 #quest-filters {
   display: flex;
   flex-wrap: wrap;
