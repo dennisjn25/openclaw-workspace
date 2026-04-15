@@ -24,6 +24,42 @@ const LIVE_EVENT_TYPES = [
 ];
 
 let eventSimulationTimer = null;
+const STATE_STORAGE_KEY = 'mission-control-v1-state';
+
+function safeParseNumber(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function saveRuntimeState() {
+  try {
+    const snapshot = {
+      xp: GAME_STATE.xp,
+      credits: GAME_STATE.credits,
+      crystals: GAME_STATE.crystals,
+      unlockedUpgrades: GAME_STATE.unlockedUpgrades || [],
+      missionLog: GAME_STATE.missionLog || []
+    };
+    window.localStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(snapshot));
+  } catch (error) {
+    console.warn('State save skipped:', error);
+  }
+}
+
+function loadRuntimeState() {
+  try {
+    const raw = window.localStorage.getItem(STATE_STORAGE_KEY);
+    if (!raw) return;
+    const state = JSON.parse(raw);
+    GAME_STATE.xp = safeParseNumber(state.xp, 0);
+    GAME_STATE.credits = safeParseNumber(state.credits, 0);
+    GAME_STATE.crystals = safeParseNumber(state.crystals, 0);
+    GAME_STATE.unlockedUpgrades = Array.isArray(state.unlockedUpgrades) ? state.unlockedUpgrades : [];
+    GAME_STATE.missionLog = Array.isArray(state.missionLog) ? state.missionLog : [];
+  } catch (error) {
+    console.warn('State load skipped:', error);
+  }
+}
 
 function switchScreen(screenId) {
   document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
@@ -238,6 +274,10 @@ function renderQuestBoard() {
   }
 
   visible.forEach(quest => {
+    const done = (quest.subtasks || []).filter(s => s.done).length;
+    const total = (quest.subtasks || []).length;
+    const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+
     const card = document.createElement('article');
     card.className = `quest-card hud-panel status-${quest.status}`;
     card.innerHTML = `
@@ -250,6 +290,10 @@ function renderQuestBoard() {
         <p>Urgency: <span class="urgency-${quest.urgency}">${quest.urgency.toUpperCase()}</span></p>
         <p>Risk: <span class="urgency-${quest.risk === 'high' ? 'high' : quest.risk === 'low' ? 'low' : 'medium'}">${quest.risk.toUpperCase()}</span></p>
         <p>ETA: ${quest.estimatedDuration}</p>
+        <div class="quest-progress">
+          <div class="quest-progress-head"><span>Progress</span><span>${done}/${total || 0}</span></div>
+          <div class="quest-progress-bar"><i style="width:${progress}%"></i></div>
+        </div>
         <p class="reward-text">Reward: ${quest.reward.xp} XP • ${quest.reward.credits} Credits • ${quest.reward.crystals || 0} Crystals</p>
         <div class="recommended-agents">Recommended: ${quest.recommendedAgents.map(id => `<img src="${AGENT_ROSTER[id]?.avatar}" class="agent-thumbnail" title="${AGENT_ROSTER[id]?.name}">`).join('')}</div>
       </div>
@@ -299,8 +343,33 @@ function renderActiveMissions() {
   if (!list) return;
   const active = quests.filter(q => q.status === 'in_progress' || q.status === 'review');
   list.innerHTML = active.length
-    ? active.map(q => `<li>${q.title}</li>`).join('')
+    ? active.map(q => {
+      const done = (q.subtasks || []).filter(s => s.done).length;
+      const total = (q.subtasks || []).length;
+      const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+      return `<li>${q.title} <span class="mission-inline-progress">(${pct}%)</span></li>`;
+    }).join('')
     : '<li>No missions in progress.</li>';
+}
+
+function renderHqSystems() {
+  const panel = document.getElementById('hq-systems-summary');
+  if (!panel) return;
+
+  const agents = Object.values(AGENT_ROSTER);
+  const avgEnergy = Math.round(agents.reduce((acc, a) => acc + (a.energy || 0), 0) / Math.max(agents.length, 1));
+  const avgBond = Math.round(agents.reduce((acc, a) => acc + (a.affinity || 0), 0) / Math.max(agents.length, 1));
+  const activeCount = quests.filter(q => q.status === 'in_progress').length;
+  const reviewCount = quests.filter(q => q.status === 'review').length;
+  const alertScore = Math.min(100, GAME_STATE.activeAlerts.length * 8);
+
+  panel.innerHTML = `
+    <div class="system-line"><span>Power Grid</span><b>${avgEnergy}%</b></div>
+    <div class="system-line"><span>Guild Cohesion</span><b>${avgBond}%</b></div>
+    <div class="system-line"><span>Live Deployments</span><b>${activeCount}</b></div>
+    <div class="system-line"><span>Review Queue</span><b>${reviewCount}</b></div>
+    <div class="system-line ${alertScore >= 50 ? 'warning' : ''}"><span>Alert Pressure</span><b>${alertScore}%</b></div>
+  `;
 }
 
 function updateAdvisorRecommendation() {
@@ -360,6 +429,7 @@ function simulateLiveEvent() {
   renderResourceHUD();
   renderLiveAlerts();
   renderActiveMissions();
+  renderHqSystems();
   updateAdvisorRecommendation();
 
   if (GAME_STATE.currentScreen === 'quest-board-view') renderQuestBoard();
@@ -497,6 +567,28 @@ function renderSquadBuilder(container) {
   };
 
   container.appendChild(slots);
+
+  const actions = document.createElement('div');
+  actions.className = 'squad-actions';
+  actions.innerHTML = `
+    <button type="button" class="preset-button" id="auto-squad-button">Auto-fill Best Squad</button>
+    <button type="button" class="preset-button" id="clear-squad-button">Clear Slots</button>
+  `;
+
+  actions.querySelector('#auto-squad-button')?.addEventListener('click', () => {
+    if (!GAME_STATE.selectedQuest) return;
+    GAME_STATE.selectedAgents = bestSquadForQuest(GAME_STATE.selectedQuest);
+    fillSlots();
+    renderDraggableAgents();
+  });
+
+  actions.querySelector('#clear-squad-button')?.addEventListener('click', () => {
+    GAME_STATE.selectedAgents = [];
+    fillSlots();
+    renderDraggableAgents();
+  });
+
+  container.appendChild(actions);
   container.appendChild(agentPool);
   fillSlots();
   renderDraggableAgents();
@@ -624,9 +716,11 @@ async function handleDeployMission() {
   });
 
   saveQuests(quests);
+  saveRuntimeState();
   renderResourceHUD();
   renderLiveAlerts();
   renderActiveMissions();
+  renderHqSystems();
   updateAdvisorRecommendation();
   hideMissionDetailModal();
   switchScreen('mission-control-home');
@@ -651,12 +745,25 @@ function renderReports() {
     .map(log => gradeToScore(log.grade))
     .reduce((a, b) => Math.max(a, b), 0);
 
+  const topAgents = Object.values(
+    GAME_STATE.missionLog.reduce((acc, log) => {
+      (log.agents || []).forEach(id => {
+        if (!acc[id]) acc[id] = { id, count: 0 };
+        acc[id].count += 1;
+      });
+      return acc;
+    }, {})
+  )
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
   view.innerHTML = `
     <div class="hud-panel report-summary">
       <h2>Replay Command Summary</h2>
       <p>Avg Efficiency: <strong>${avgEfficiency}%</strong></p>
       <p>Best Grade Score: <strong>${topGrade}</strong></p>
       <p>Total Runs: <strong>${GAME_STATE.missionLog.length}</strong></p>
+      <p>Most Deployed: <strong>${topAgents.length ? topAgents.map(a => `${AGENT_ROSTER[a.id]?.name || a.id} (${a.count})`).join(', ') : 'No deployments yet'}</strong></p>
     </div>
     <div class="replay-grid">
       ${GAME_STATE.missionLog.map(log => `
@@ -707,8 +814,10 @@ function renderUpgrades() {
       GAME_STATE.crystals -= upg.costCrystals;
       GAME_STATE.unlockedUpgrades.push(upg.id);
       GAME_STATE.activeAlerts.unshift({ type: 'success', message: `Upgrade unlocked: ${upg.name}`, at: Date.now() });
+      saveRuntimeState();
       renderResourceHUD();
       renderLiveAlerts();
+      renderHqSystems();
       renderUpgrades();
     });
 
@@ -739,6 +848,7 @@ function bindEvents() {
     renderResourceHUD();
     renderLiveAlerts();
     renderActiveMissions();
+    renderHqSystems();
     updateAdvisorRecommendation();
     spawnBaseAmbience();
   });
@@ -789,6 +899,7 @@ function bindEvents() {
       });
       renderResourceHUD();
       renderLiveAlerts();
+      renderHqSystems();
       updateAdvisorRecommendation();
       const msg = document.getElementById('global-status-message');
       if (msg) msg.textContent = `Kirby suggests ${btn.textContent}. Team ready.`;
@@ -800,13 +911,17 @@ async function init() {
   const loaded = await loadQuests();
   quests = hydrateQuests(loaded);
 
+  loadRuntimeState();
+
   if (!Array.isArray(GAME_STATE.unlockedUpgrades)) GAME_STATE.unlockedUpgrades = [];
+  if (!Array.isArray(GAME_STATE.missionLog)) GAME_STATE.missionLog = [];
 
   switchScreen(GAME_STATE.currentScreen);
   bindEvents();
   GAME_STATE.activeAlerts.push({ type: 'info', message: 'Mission Control online. Quest board synchronized.', at: Date.now() });
   renderResourceHUD();
   renderLiveAlerts();
+  renderHqSystems();
   updateAdvisorRecommendation();
   spawnBaseAmbience();
   startEventSimulation();

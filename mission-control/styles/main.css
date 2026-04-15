@@ -246,6 +246,35 @@ body {
   padding-left: 18px;
 }
 
+.mission-inline-progress {
+  color: var(--color-text-secondary);
+  font-size: 11px;
+}
+
+#hq-systems-summary {
+  display: grid;
+  gap: 8px;
+}
+
+.system-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #355285;
+  border-radius: 8px;
+  padding: 7px 8px;
+  font-size: 12px;
+  background: rgba(12, 22, 39, .7);
+}
+
+.system-line b {
+  color: var(--color-glow-emerald);
+}
+
+.system-line.warning b {
+  color: var(--color-alert-orange);
+}
+
 #quick-deploy-button,
 #deploy-mission-button {
   width: 100%;
@@ -430,6 +459,32 @@ body {
   margin: 0;
   font-size: 13px;
   color: #d8e6ff;
+}
+
+.quest-progress {
+  margin-top: 6px;
+}
+
+.quest-progress-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+.quest-progress-bar {
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #0f1a30;
+  border: 1px solid #31496f;
+}
+
+.quest-progress-bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #56b4ff, #6ad27b);
 }
 
 .urgency-low { color: #67d087; }
@@ -724,6 +779,13 @@ body {
 .agent-pool {
   display: flex;
   flex-wrap: wrap;
+}
+
+.squad-actions {
+  margin: 10px 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .room-overlay {
