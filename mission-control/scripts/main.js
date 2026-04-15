@@ -114,6 +114,9 @@ function normalizeIdeaFlow(flow, fallbackQuestId = null) {
   const subquests = Array.isArray(flow.subquests) && flow.subquests.length
     ? flow.subquests
     : buildKirbySubquests(flow.idea, flow.polish, orchestration, questId);
+  subquests.forEach((subquest, index) => {
+    if (typeof subquest.order !== 'number') subquest.order = index;
+  });
 
   return {
     ...flow,
@@ -304,6 +307,7 @@ function buildKirbySubquests(idea, polish, orchestration, parentQuestId) {
     id: `${parentQuestId}::${branch.id}`,
     parentQuestId,
     branchId: branch.id,
+    order: index,
     title: `${branch.label} Mission`,
     description: `${branch.summary} ${polish.value}`,
     status: 'backlog',
@@ -329,7 +333,9 @@ function buildKirbySubquests(idea, polish, orchestration, parentQuestId) {
 }
 
 function getQuestSubquests(quest) {
-  return Array.isArray(quest?.ideaFlow?.subquests) ? quest.ideaFlow.subquests : [];
+  return Array.isArray(quest?.ideaFlow?.subquests)
+    ? [...quest.ideaFlow.subquests].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    : [];
 }
 
 function getAssignedAgents(mission) {
@@ -338,6 +344,14 @@ function getAssignedAgents(mission) {
     : Array.isArray(mission?.recommendedAgents)
       ? mission.recommendedAgents.slice(0, 3)
       : [];
+}
+
+function renumberChildMissionOrder(parentQuest) {
+  const subquests = parentQuest?.ideaFlow?.subquests;
+  if (!Array.isArray(subquests)) return;
+  subquests.forEach((subquest, index) => {
+    subquest.order = index;
+  });
 }
 
 function getMissionById(missionId) {
@@ -429,6 +443,30 @@ function toggleChildMissionAgent(subquestId, agentId) {
   updateAdvisorRecommendation();
 }
 
+function moveChildMission(subquestId, direction) {
+  const { mission, parentQuest, isSubquest } = getMissionById(subquestId);
+  if (!mission || !parentQuest || !isSubquest) return;
+  const subquests = parentQuest.ideaFlow?.subquests;
+  if (!Array.isArray(subquests)) return;
+
+  const currentIndex = subquests.findIndex(item => item.id === subquestId);
+  if (currentIndex === -1) return;
+  const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+  if (targetIndex < 0 || targetIndex >= subquests.length) return;
+
+  const [item] = subquests.splice(currentIndex, 1);
+  subquests.splice(targetIndex, 0, item);
+  renumberChildMissionOrder(parentQuest);
+
+  saveRuntimeState();
+  renderQuestBoard();
+  renderIdeaFlowPanels();
+  renderActiveMissions();
+  renderHqSystems();
+  renderThreatConsole();
+  updateAdvisorRecommendation();
+}
+
 function renderChildMissionAssignments(subquest) {
   const assigned = getAssignedAgents(subquest);
   const candidates = [subquest.branchData?.lead, ...(subquest.branchData?.support || []), ...subquest.recommendedAgents]
@@ -460,6 +498,7 @@ function renderChildMissionCards(quest) {
       ${subquests.map(subquest => {
         const progress = countMissionProgress(subquest);
         const expanded = expandedChildMissions.has(subquest.id);
+        const subquestIndex = subquests.findIndex(item => item.id === subquest.id);
         return `
           <div class="child-mission-card ${expanded ? 'expanded' : ''}" data-subquest-id="${subquest.id}">
             <button type="button" class="child-mission-summary" data-subquest-id="${subquest.id}">
@@ -473,6 +512,8 @@ function renderChildMissionCards(quest) {
             <div class="child-mission-actions">
               <button type="button" class="child-mission-inline-action" data-open-subquest="${subquest.id}">Open</button>
               <button type="button" class="child-mission-inline-action" data-toggle-subquest="${subquest.id}">${expanded ? 'Collapse' : 'Expand'}</button>
+              <button type="button" class="child-mission-inline-action" data-move-subquest="${subquest.id}" data-direction="up" ${subquestIndex === 0 ? 'disabled' : ''}>↑</button>
+              <button type="button" class="child-mission-inline-action" data-move-subquest="${subquest.id}" data-direction="down" ${subquestIndex === subquests.length - 1 ? 'disabled' : ''}>↓</button>
             </div>
             ${expanded ? `
               <div class="child-mission-checklist">
@@ -608,6 +649,12 @@ function renderIdeaFlowPanels() {
       agentButton.addEventListener('click', event => {
         event.preventDefault();
         toggleChildMissionAgent(agentButton.dataset.agentToggle, agentButton.dataset.agentId);
+      });
+    });
+    button.querySelectorAll('[data-move-subquest]').forEach(moveButton => {
+      moveButton.addEventListener('click', event => {
+        event.preventDefault();
+        moveChildMission(moveButton.dataset.moveSubquest, moveButton.dataset.direction);
       });
     });
   });
@@ -1190,6 +1237,13 @@ function renderQuestBoard() {
           toggleChildMissionAgent(agentButton.dataset.agentToggle, agentButton.dataset.agentId);
         });
       });
+      button.querySelectorAll('[data-move-subquest]').forEach(moveButton => {
+        moveButton.addEventListener('click', event => {
+          event.preventDefault();
+          event.stopPropagation();
+          moveChildMission(moveButton.dataset.moveSubquest, moveButton.dataset.direction);
+        });
+      });
     });
     list.appendChild(card);
   });
@@ -1568,7 +1622,7 @@ function renderMissionDetailSubquests(container, parentQuest, activeMissionId) {
         const progress = countMissionProgress(subquest);
         return `
           <button type="button" class="mission-subquest-tile ${subquest.id === activeMissionId ? 'active' : ''}" data-subquest-id="${subquest.id}">
-            <span class="mission-subquest-title">${subquest.title}</span>
+            <span class="mission-subquest-title">P${(subquest.order ?? 0) + 1} • ${subquest.title}</span>
             <span class="mission-subquest-meta">${subquest.status.replace('_', ' ')} • ${subquest.estimatedDuration}</span>
             <span class="mission-subquest-meta">Lead: ${AGENT_ROSTER[subquest.branchData?.lead]?.name || subquest.branchData?.lead || 'Unknown'}</span>
             <span class="mission-subquest-meta">Assigned: ${getAssignedAgents(subquest).map(id => AGENT_ROSTER[id]?.name || id).join(', ') || 'Unassigned'}</span>

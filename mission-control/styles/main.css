@@ -1329,6 +1329,12 @@ body.ambience-off #alert-routing-layer {
   border-color: rgba(255, 209, 102, .7);
 }
 
+.child-mission-inline-action:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  border-color: rgba(86, 180, 255, .18);
+}
+
 .child-mission-checklist {
   display: grid;
   gap: 8px;
