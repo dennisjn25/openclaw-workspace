@@ -535,6 +535,7 @@ function renderQuestBoard() {
 
     const card = document.createElement('article');
     card.className = `quest-card hud-panel status-${quest.status}`;
+    card.dataset.questId = quest.id;
     card.innerHTML = `
       <div class="quest-card-header">
         <h3>${QUEST_CATEGORIES.find(c => c.id === quest.type)?.icon || '❓'} ${quest.title}</h3>
@@ -558,6 +559,29 @@ function renderQuestBoard() {
     card.querySelector('.view-mission-details')?.addEventListener('click', () => showMissionDetailModal(quest.id));
     list.appendChild(card);
   });
+}
+
+function pulseQuestCard(questId) {
+  const card = document.querySelector(`#quest-list .quest-card[data-quest-id="${questId}"]`);
+  if (!card) return;
+  card.classList.add('focus-pulse');
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => card.classList.remove('focus-pulse'), 2200);
+}
+
+function focusThreatTarget(agentId, questId) {
+  if (!agentId || !questId) return;
+  if (AGENT_ROSTER[agentId]) openRoomOverlay(agentId);
+
+  setTimeout(() => {
+    closeRoomOverlay();
+    switchScreen('quest-board-view');
+    updateNavState('quest-board-view');
+    renderQuestBoard();
+    pulseQuestCard(questId);
+    const msg = document.getElementById('global-status-message');
+    if (msg) msg.textContent = `Focused mission: ${quests.find(q => q.id === questId)?.title || questId}`;
+  }, 520);
 }
 
 function renderAgentRoster(focusAgentId = null) {
@@ -685,12 +709,14 @@ function getThreatRows() {
         agentId: row.agentId,
         pressure: 0,
         remainingMs: row.remainingMs,
+        questId: row.questId,
         questTitle: row.questTitle
       };
     }
     acc[row.agentId].pressure = Math.max(acc[row.agentId].pressure, row.pressure);
     if (row.remainingMs < acc[row.agentId].remainingMs) {
       acc[row.agentId].remainingMs = row.remainingMs;
+      acc[row.agentId].questId = row.questId;
       acc[row.agentId].questTitle = row.questTitle;
     }
     return acc;
@@ -720,7 +746,7 @@ function renderThreatConsole() {
     const agent = AGENT_ROSTER[row.agentId];
     const tier = row.pressure >= 90 ? 'systemic' : row.pressure >= 75 ? 'severe' : 'high';
     return `
-      <div class="threat-row tier-${tier}">
+      <div class="threat-row tier-${tier}" data-agent-id="${row.agentId}" data-quest-id="${row.questId}">
         <div class="threat-head">
           <span class="threat-rank">#${idx + 1}</span>
           <span class="threat-agent">${agent?.name || row.agentId}</span>
@@ -1313,6 +1339,13 @@ function bindEvents() {
   document.addEventListener('click', (event) => {
     if (!(event.target instanceof HTMLElement)) return;
     if (event.target.tagName === 'BUTTON') playUiBlip('soft');
+  });
+
+  document.getElementById('threat-console-list')?.addEventListener('click', (event) => {
+    if (!(event.target instanceof Element)) return;
+    const row = event.target.closest('.threat-row[data-agent-id][data-quest-id]');
+    if (!row) return;
+    focusThreatTarget(row.dataset.agentId, row.dataset.questId);
   });
 
   window.addEventListener('resize', () => renderAlertRoutingLayer());
