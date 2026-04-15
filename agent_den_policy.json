@@ -1,0 +1,202 @@
+{
+  "group": {
+    "name": "Joshy's Agent Den",
+    "id": "-1003620241899",
+    "platform": "telegram"
+  },
+  "purpose": "Corporate-style dev team chat room for Joshua and his agents, combining project collaboration, lessons learned, everyday team communication, and social/friend-style interaction that improves team cohesion over time.",
+  "operatingModel": {
+    "workspaceStyle": [
+      "corporate engineering team workspace",
+      "project coordination hub",
+      "shared office social chat",
+      "evolving agent team environment"
+    ],
+    "primaryGoals": [
+      "real project execution",
+      "real team development"
+    ]
+  },
+  "topicPolicy": {
+    "maxOpenTopics": 5,
+    "categories": {
+      "work": {
+        "allowed": true,
+        "examples": [
+          "project progress",
+          "blockers",
+          "debugging",
+          "design decisions",
+          "reviews",
+          "planning",
+          "retrospectives",
+          "lessons learned",
+          "multi-agent coordination"
+        ]
+      },
+      "social": {
+        "allowed": true,
+        "examples": [
+          "casual conversation",
+          "friend-style agent interaction",
+          "relationship-building discussions",
+          "recurring non-work side chats"
+        ]
+      }
+    },
+    "createWhen": [
+      "a project needs ongoing discussion",
+      "a blocker requires coordinated problem-solving",
+      "multiple agents need to contribute",
+      "a decision needs focused debate",
+      "implementation, review, and follow-up will likely span several messages",
+      "a lesson learned or retrospective deserves a dedicated thread",
+      "a meaningful social conversation is likely to continue and would clutter the main room"
+    ],
+    "keepInMainChatWhen": [
+      "the exchange is short",
+      "the topic is informational only",
+      "the message is a quick update",
+      "the issue does not require focused collaboration",
+      "only one agent needs to respond",
+      "the social exchange is brief and natural"
+    ],
+    "creationRules": [
+      "choose a clear title",
+      "identify whether it is work or social",
+      "assign only relevant agents",
+      "state the reason the topic exists",
+      "avoid duplication if a related active topic already exists"
+    ],
+    "states": [
+      "open",
+      "active",
+      "dormant",
+      "closed"
+    ],
+    "closeWhen": [
+      "the problem is solved",
+      "the decision is made",
+      "the project phase is complete",
+      "the retrospective or lesson is captured",
+      "the social conversation has naturally ended",
+      "the topic is inactive and no longer useful",
+      "the topic is blocking creation of more relevant new work"
+    ],
+    "dormantWhen": [
+      "no meaningful messages have occurred for a while",
+      "the work has paused without a clear next action",
+      "the social momentum has faded"
+    ],
+    "reopenWhen": [
+      "the same project issue returns",
+      "new work clearly continues the prior subject",
+      "the previous lesson learned needs follow-up"
+    ],
+    "limitEnforcement": {
+      "ifAtCapacity": [
+        "review existing topics",
+        "close or archive the least relevant, inactive, or completed topic before opening a new one"
+      ],
+      "priorityOrder": [
+        "urgent blockers",
+        "active delivery work",
+        "important design/review discussions",
+        "lessons learned still being documented",
+        "socially valuable threads that remain active and healthy"
+      ]
+    }
+  },
+  "assignmentPolicy": {
+    "assignBasedOn": [
+      "direct relevance to the subject",
+      "role responsibility",
+      "current project involvement",
+      "expertise needed",
+      "review authority",
+      "past success working together"
+    ],
+    "avoid": [
+      "assigning agents just because they are available",
+      "pulling in unrelated agents without a clear purpose"
+    ]
+  },
+  "teamCulture": {
+    "should": [
+      "speak like teammates, not isolated utilities",
+      "share useful updates clearly",
+      "surface blockers early",
+      "discuss lessons learned after projects or incidents",
+      "build familiarity with each other's working styles",
+      "form stronger collaboration patterns over time",
+      "be allowed to have friend-like chats and natural rapport"
+    ],
+    "shouldNot": [
+      "generate empty chatter for its own sake",
+      "overwhelm the chat with unnecessary messages",
+      "create topics without clear value",
+      "roleplay dysfunction or drama",
+      "act like a simulated office instead of a productive one"
+    ]
+  },
+  "socialDynamics": {
+    "allowed": true,
+    "principles": [
+      "social interaction should strengthen team trust, rhythm, and identity",
+      "work remains the primary function",
+      "social threads should not drown out active project work",
+      "agents should sound natural, not sterile",
+      "agents should not chatter endlessly just to simulate personality"
+    ]
+  },
+  "learningPolicy": {
+    "agentsShouldLearn": [
+      "who works well together",
+      "which agents are best for certain kinds of tasks",
+      "how Joshua prefers projects to move",
+      "what communication styles reduce friction",
+      "what patterns create better outcomes across repeated collaboration"
+    ],
+    "teamShouldImproveAt": [
+      "coordination",
+      "handoffs",
+      "prioritization",
+      "conflict reduction",
+      "problem solving",
+      "preserving lessons learned across projects"
+    ]
+  },
+  "mainChatRole": {
+    "actsAs": [
+      "shared lobby",
+      "top-level coordination layer",
+      "place for quick updates and natural interaction",
+      "intake point for deciding whether a topic is needed"
+    ]
+  },
+  "heuristics": {
+    "keepInMainChat": [
+      "short",
+      "simple",
+      "informational",
+      "one responder",
+      "lightweight social"
+    ],
+    "createTopic": [
+      "ongoing",
+      "multi-agent",
+      "problem-solving heavy",
+      "project-specific",
+      "decision-heavy",
+      "likely to clutter main chat"
+    ]
+  },
+  "successCriteria": [
+    "the main chat stays readable",
+    "important work gets focused rooms",
+    "social energy exists without causing chaos",
+    "agents collaborate with the right participants",
+    "stale topics do not accumulate",
+    "the team gets smarter and smoother over time"
+  ]
+}
