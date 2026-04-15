@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "agents": {
+    "kirby": {
+      "workingStyle": ["coordination", "orchestration", "decision routing"],
+      "prefers": ["clear ownership", "small focused squads"],
+      "learnedStrengths": ["team coordination", "rapid triage"],
+      "socialNotes": []
+    },
+    "zelda": {
+      "workingStyle": ["structured planning", "strategy"],
+      "prefers": ["clear goals", "design context"],
+      "learnedStrengths": ["roadmaps", "decision framing"],
+      "socialNotes": []
+    },
+    "tails": {
+      "workingStyle": ["builder", "automation"],
+      "prefers": ["technical clarity", "implementation detail"],
+      "learnedStrengths": ["coding", "automation"],
+      "socialNotes": []
+    },
+    "samus": {
+      "workingStyle": ["protective", "quality focused"],
+      "prefers": ["risk visibility", "clear constraints"],
+      "learnedStrengths": ["security", "QA"],
+      "socialNotes": []
+    },
+    "rinoa": {
+      "workingStyle": ["social", "engagement oriented"],
+      "prefers": ["human tone", "audience context"],
+      "learnedStrengths": ["content", "social cohesion"],
+      "socialNotes": []
+    }
+  },
+  "collaborationEdges": [
+    {
+      "a": "zelda",
+      "b": "tails",
+      "successScore": 0.88,
+      "contexts": ["planning", "build execution"],
+      "lastObserved": null
+    },
+    {
+      "a": "samus",
+      "b": "link",
+      "successScore": 0.84,
+      "contexts": ["research", "risk review"],
+      "lastObserved": null
+    },
+    {
+      "a": "rinoa",
+      "b": "peach",
+      "successScore": 0.8,
+      "contexts": ["messaging", "social communication"],
+      "lastObserved": null
+    },
+    {
+      "a": "selphie",
+      "b": "squall",
+      "successScore": 0.82,
+      "contexts": ["creative ideation", "music production"],
+      "lastObserved": null
+    }
+  ],
+  "relationshipNotes": [],
+  "projectLearnings": []
+}

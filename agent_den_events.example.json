@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "description": "Example event payloads for feeding Agent Den decisions from Telegram/OpenClaw integrations.",
+  "events": [
+    {
+      "id": "evt-001",
+      "source": "telegram",
+      "channel": "Joshy's Agent Den",
+      "kind": "message_batch",
+      "title": "Mission Control UI blocker",
+      "topicType": "work",
+      "purpose": "blocker_resolution",
+      "signals": [
+        "ongoing_discussion",
+        "multi_agent_needed",
+        "blocker_present",
+        "cluttering_main_chat"
+      ],
+      "messageCount": 7,
+      "agentIds": ["kirby", "tails", "zelda", "luigi"],
+      "summary": "Agents are discussing a UI blocker and the thread is spilling into the main room."
+    },
+    {
+      "id": "evt-002",
+      "source": "telegram",
+      "channel": "Joshy's Agent Den",
+      "kind": "message_batch",
+      "title": "Late night music rabbit hole",
+      "topicType": "social",
+      "purpose": "friend_chat",
+      "signals": [
+        "meaningful_social_thread",
+        "cluttering_main_chat"
+      ],
+      "messageCount": 6,
+      "agentIds": ["selphie", "squall", "yuna"],
+      "summary": "A recurring creative side chat is getting active enough to deserve its own room."
+    }
+  ]
+}
