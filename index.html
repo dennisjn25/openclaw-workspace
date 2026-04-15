@@ -29,6 +29,7 @@
                     <!-- Placeholder for interactive base map / room layout -->
                     <img src="mission-control/assets/base-map-placeholder.png" alt="Base Map" class="base-map-placeholder">
                     <div id="ambience-layer" aria-hidden="true"></div>
+                    <div id="day-night-cycle" aria-hidden="true"></div>
                     <div id="agent-stations-grid">
                         <!-- Agent room icons will be rendered here -->
                     </div>
@@ -77,6 +78,18 @@
                         <h2>Kirby Best Squad</h2>
                         <p id="advisor-recommendation">Analyzing mission board...</p>
                         <button id="advisor-refresh" class="preset-button">Refresh Recommendation</button>
+                    </section>
+
+                    <section id="immersion-panel" class="panel-section">
+                        <h2>Immersion Controls</h2>
+                        <div class="immersion-control-row">
+                            <label for="toggle-ambience">Ambient FX</label>
+                            <input id="toggle-ambience" type="checkbox" checked>
+                        </div>
+                        <div class="immersion-control-row">
+                            <label for="toggle-audio">UI Audio</label>
+                            <input id="toggle-audio" type="checkbox" checked>
+                        </div>
                     </section>
                 </aside>
             </main>

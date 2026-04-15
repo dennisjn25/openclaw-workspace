@@ -25,6 +25,12 @@ const LIVE_EVENT_TYPES = [
 
 let eventSimulationTimer = null;
 const STATE_STORAGE_KEY = 'mission-control-v1-state';
+const IMMERSION_STATE = {
+  ambienceFx: true,
+  uiAudio: true,
+  audioContext: null,
+  dayNightTimer: null
+};
 
 function safeParseNumber(value, fallback = 0) {
   const n = Number(value);
@@ -38,7 +44,11 @@ function saveRuntimeState() {
       credits: GAME_STATE.credits,
       crystals: GAME_STATE.crystals,
       unlockedUpgrades: GAME_STATE.unlockedUpgrades || [],
-      missionLog: GAME_STATE.missionLog || []
+      missionLog: GAME_STATE.missionLog || [],
+      immersion: {
+        ambienceFx: IMMERSION_STATE.ambienceFx,
+        uiAudio: IMMERSION_STATE.uiAudio
+      }
     };
     window.localStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(snapshot));
   } catch (error) {
@@ -56,9 +66,71 @@ function loadRuntimeState() {
     GAME_STATE.crystals = safeParseNumber(state.crystals, 0);
     GAME_STATE.unlockedUpgrades = Array.isArray(state.unlockedUpgrades) ? state.unlockedUpgrades : [];
     GAME_STATE.missionLog = Array.isArray(state.missionLog) ? state.missionLog : [];
+    IMMERSION_STATE.ambienceFx = state.immersion?.ambienceFx ?? true;
+    IMMERSION_STATE.uiAudio = state.immersion?.uiAudio ?? true;
   } catch (error) {
     console.warn('State load skipped:', error);
   }
+}
+
+function ensureAudioContext() {
+  if (!IMMERSION_STATE.uiAudio) return null;
+  if (!IMMERSION_STATE.audioContext) {
+    IMMERSION_STATE.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (IMMERSION_STATE.audioContext.state === 'suspended') {
+    IMMERSION_STATE.audioContext.resume().catch(() => {});
+  }
+  return IMMERSION_STATE.audioContext;
+}
+
+function playUiBlip(type = 'soft') {
+  const ctx = ensureAudioContext();
+  if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  const now = ctx.currentTime;
+  const base = type === 'confirm' ? 520 : type === 'alert' ? 260 : 420;
+  osc.frequency.setValueAtTime(base, now);
+  osc.frequency.exponentialRampToValueAtTime(base * 1.15, now + 0.05);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.045, now + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+  osc.type = type === 'alert' ? 'square' : 'triangle';
+  osc.start(now);
+  osc.stop(now + 0.14);
+}
+
+function playDeploySweep() {
+  const ctx = ensureAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  const filter = ctx.createBiquadFilter();
+
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(180, now);
+  osc.frequency.exponentialRampToValueAtTime(860, now + 0.9);
+
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(700, now);
+  filter.frequency.exponentialRampToValueAtTime(3800, now + 0.9);
+
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.03, now + 0.08);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.0);
+
+  osc.start(now);
+  osc.stop(now + 1.02);
 }
 
 function switchScreen(screenId) {
@@ -121,7 +193,12 @@ function renderLiveAlerts() {
 
 function spawnBaseAmbience() {
   const layer = document.getElementById('ambience-layer');
-  if (!layer || layer.childElementCount > 0) return;
+  if (!layer) return;
+  if (!IMMERSION_STATE.ambienceFx) {
+    layer.innerHTML = '';
+    return;
+  }
+  if (layer.childElementCount > 0) return;
 
   for (let i = 0; i < 20; i += 1) {
     const dot = document.createElement('i');
@@ -134,11 +211,36 @@ function spawnBaseAmbience() {
   }
 }
 
+function updateDayNightCycle() {
+  const overlay = document.getElementById('day-night-cycle');
+  if (!overlay) return;
+  const now = new Date();
+  const minutes = (now.getHours() * 60) + now.getMinutes();
+  const dayRatio = Math.abs((minutes - 720) / 720);
+  const darkness = Math.min(0.72, dayRatio * 0.72);
+  overlay.style.opacity = `${darkness.toFixed(3)}`;
+}
+
+function startDayNightCycle() {
+  updateDayNightCycle();
+  if (IMMERSION_STATE.dayNightTimer) return;
+  IMMERSION_STATE.dayNightTimer = setInterval(updateDayNightCycle, 30000);
+}
+
+function getHotAgents() {
+  const hot = new Set();
+  quests
+    .filter(q => q.status === 'in_progress' || q.status === 'review')
+    .forEach(q => (q.recommendedAgents || []).forEach(id => hot.add(id)));
+  return hot;
+}
+
 function renderAgentStations() {
   const grid = document.getElementById('agent-stations-grid');
   if (!grid) return;
   grid.innerHTML = '';
 
+  const hotAgents = getHotAgents();
   Object.values(AGENT_ROSTER).forEach(agent => {
     const card = document.createElement('button');
     card.className = 'agent-station-icon';
@@ -146,6 +248,7 @@ function renderAgentStations() {
     card.style.backgroundImage = `url(${agent.avatar})`;
     card.title = `${agent.name} • ${agent.roomTheme}`;
     card.dataset.agentId = agent.id;
+    if (hotAgents.has(agent.id)) card.classList.add('is-hot');
     card.addEventListener('click', () => openRoomOverlay(agent.id));
     grid.appendChild(card);
   });
@@ -430,6 +533,7 @@ function simulateLiveEvent() {
   renderLiveAlerts();
   renderActiveMissions();
   renderHqSystems();
+  renderAgentStations();
   updateAdvisorRecommendation();
 
   if (GAME_STATE.currentScreen === 'quest-board-view') renderQuestBoard();
@@ -669,9 +773,20 @@ function nextRecommendation(grade, synergyCount) {
 async function playDeployCinematic(quest, grade) {
   const overlay = document.getElementById('deploy-cinematic');
   if (!overlay) return;
-  overlay.innerHTML = `<div class="cinematic-card"><h2>Launching Quest</h2><p>${quest.title}</p><p>Projected Grade: <strong>${grade}</strong></p></div>`;
+  playDeploySweep();
+  const squadNames = GAME_STATE.selectedAgents.map(id => AGENT_ROSTER[id]?.name || id).join(' • ');
+  overlay.innerHTML = `
+    <div class="cinematic-card">
+      <div class="cinematic-phase">Mission Link Established</div>
+      <h2>Launching Quest</h2>
+      <p>${quest.title}</p>
+      <p class="cinematic-squad">Squad: ${squadNames || 'Unassigned'}</p>
+      <p>Projected Grade: <strong>${grade}</strong></p>
+      <div class="cinematic-scanline"></div>
+    </div>
+  `;
   overlay.classList.add('show');
-  await new Promise(resolve => setTimeout(resolve, 1400));
+  await new Promise(resolve => setTimeout(resolve, 1700));
   overlay.classList.remove('show');
 }
 
@@ -721,6 +836,7 @@ async function handleDeployMission() {
   renderLiveAlerts();
   renderActiveMissions();
   renderHqSystems();
+  renderAgentStations();
   updateAdvisorRecommendation();
   hideMissionDetailModal();
   switchScreen('mission-control-home');
@@ -905,6 +1021,23 @@ function bindEvents() {
       if (msg) msg.textContent = `Kirby suggests ${btn.textContent}. Team ready.`;
     });
   });
+
+  document.getElementById('toggle-ambience')?.addEventListener('change', (event) => {
+    IMMERSION_STATE.ambienceFx = event.target.checked;
+    spawnBaseAmbience();
+    saveRuntimeState();
+  });
+
+  document.getElementById('toggle-audio')?.addEventListener('change', (event) => {
+    IMMERSION_STATE.uiAudio = event.target.checked;
+    if (IMMERSION_STATE.uiAudio) playUiBlip('soft');
+    saveRuntimeState();
+  });
+
+  document.addEventListener('click', (event) => {
+    if (!(event.target instanceof HTMLElement)) return;
+    if (event.target.tagName === 'BUTTON') playUiBlip('soft');
+  });
 }
 
 async function init() {
@@ -916,6 +1049,11 @@ async function init() {
   if (!Array.isArray(GAME_STATE.unlockedUpgrades)) GAME_STATE.unlockedUpgrades = [];
   if (!Array.isArray(GAME_STATE.missionLog)) GAME_STATE.missionLog = [];
 
+  const ambienceToggle = document.getElementById('toggle-ambience');
+  const audioToggle = document.getElementById('toggle-audio');
+  if (ambienceToggle) ambienceToggle.checked = IMMERSION_STATE.ambienceFx;
+  if (audioToggle) audioToggle.checked = IMMERSION_STATE.uiAudio;
+
   switchScreen(GAME_STATE.currentScreen);
   bindEvents();
   GAME_STATE.activeAlerts.push({ type: 'info', message: 'Mission Control online. Quest board synchronized.', at: Date.now() });
@@ -924,6 +1062,7 @@ async function init() {
   renderHqSystems();
   updateAdvisorRecommendation();
   spawnBaseAmbience();
+  startDayNightCycle();
   startEventSimulation();
 }
 

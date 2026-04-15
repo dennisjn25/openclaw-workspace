@@ -146,6 +146,19 @@ body {
   pointer-events: none;
 }
 
+#day-night-cycle {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+  background:
+    radial-gradient(circle at 60% 20%, rgba(83, 123, 190, 0.45), transparent 36%),
+    radial-gradient(circle at 20% 80%, rgba(8, 17, 34, 0.78), transparent 42%),
+    linear-gradient(180deg, rgba(9, 15, 34, 0.12), rgba(5, 8, 19, 0.58));
+}
+
 .ambience-dot {
   position: absolute;
   width: 4px;
@@ -190,6 +203,16 @@ body {
 .agent-station-icon:hover {
   transform: translateY(-2px) scale(1.08);
   box-shadow: 0 0 0 3px rgba(255,209,102,.35), 0 0 28px rgba(68,243,178,.65);
+}
+
+.agent-station-icon.is-hot {
+  animation: stationPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes stationPulse {
+  0% { box-shadow: 0 0 0 3px rgba(86,180,255,.15), 0 0 18px rgba(68,243,178,.35); }
+  50% { box-shadow: 0 0 0 3px rgba(255,209,102,.55), 0 0 30px rgba(255,157,77,.55); }
+  100% { box-shadow: 0 0 0 3px rgba(86,180,255,.15), 0 0 18px rgba(68,243,178,.35); }
 }
 
 #hq-side-panel {
@@ -307,6 +330,19 @@ body {
 
 .preset-button:hover {
   border-color: #6ad27b;
+}
+
+.immersion-control-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 12px;
+  color: #d6e8ff;
+}
+
+.immersion-control-row input {
+  accent-color: #6ad27b;
 }
 
 #live-alerts-list {
@@ -908,6 +944,42 @@ body {
 
 .cinematic-card p {
   margin: 8px 0;
+}
+
+.cinematic-phase {
+  margin-bottom: 10px;
+  font-size: 10px;
+  font-family: var(--font-pixel);
+  color: var(--color-glow-emerald);
+  opacity: .9;
+  letter-spacing: .4px;
+}
+
+.cinematic-squad {
+  color: #d8ebff;
+}
+
+.cinematic-scanline {
+  margin-top: 10px;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid #45679c;
+  background: #0b1730;
+  position: relative;
+}
+
+.cinematic-scanline::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(86,180,255,0), rgba(86,180,255,.9), rgba(86,180,255,0));
+  animation: scanline 1.1s linear infinite;
+}
+
+@keyframes scanline {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
 }
 
 .report-summary {
