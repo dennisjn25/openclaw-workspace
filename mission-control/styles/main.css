@@ -94,6 +94,22 @@ body {
   white-space: nowrap;
 }
 
+.resource-counter span {
+  display: inline-block;
+  min-width: 26px;
+  text-align: right;
+}
+
+.counter-pop {
+  animation: counterPop .15s ease;
+}
+
+@keyframes counterPop {
+  from { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.12); filter: brightness(1.35); }
+  to { transform: scale(1); filter: brightness(1); }
+}
+
 #alerts-summary {
   color: var(--color-alert-orange);
 }
@@ -606,6 +622,74 @@ body {
   flex-wrap: wrap;
 }
 
+.room-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 8, 20, .66);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+}
+
+.room-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.room-overlay-card {
+  width: min(560px, calc(100vw - 32px));
+  border-radius: 14px;
+  border: 1px solid #4e79b3;
+  background: linear-gradient(180deg, rgba(19,35,63,.98), rgba(13,25,45,.98));
+  box-shadow: 0 16px 40px rgba(0,0,0,.45);
+  padding: 16px;
+  position: relative;
+}
+
+.room-overlay-card h2 {
+  margin: 0 0 10px;
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  color: var(--color-accent-gold);
+}
+
+.room-overlay-card p {
+  margin: 8px 0;
+}
+
+.room-overlay-tags {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.room-overlay-tags span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid #3f6398;
+  background: #112341;
+  font-size: 11px;
+}
+
+.room-overlay-close {
+  position: absolute;
+  right: 8px;
+  top: 6px;
+  border: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  color: #c6dcff;
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
 .deploy-cinematic {
   position: fixed;
   inset: 0;
@@ -642,6 +726,48 @@ body {
 
 .cinematic-card p {
   margin: 8px 0;
+}
+
+.report-summary {
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.report-summary h2 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-family: var(--font-pixel);
+  color: var(--color-accent-gold);
+}
+
+.report-summary p {
+  margin: 6px 0;
+}
+
+.replay-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 10px;
+}
+
+.replay-card {
+  padding: 12px;
+}
+
+.replay-card h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--color-accent-gold);
+}
+
+.replay-card p {
+  margin: 6px 0;
+  font-size: 13px;
+}
+
+.replay-time {
+  color: var(--color-text-secondary);
+  font-size: 12px;
 }
 
 .replay-list {

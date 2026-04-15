@@ -3,6 +3,7 @@ import { AGENT_ROSTER, QUEST_CATEGORIES, GAME_STATE, loadQuests, saveQuests, cal
 
 let quests = [];
 let questFilter = null;
+const hudDisplay = { xp: 0, credits: 0, crystals: 0 };
 
 function switchScreen(screenId) {
   document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
@@ -17,14 +18,34 @@ function updateNavState(screenId) {
   });
 }
 
+function animateCounter(key, target, node) {
+  const current = hudDisplay[key] ?? 0;
+  const delta = target - current;
+  if (Math.abs(delta) < 1) {
+    hudDisplay[key] = target;
+    if (node) node.textContent = Math.round(target);
+    return;
+  }
+
+  const step = delta / 10;
+  hudDisplay[key] = current + step;
+  if (node) {
+    node.textContent = Math.round(hudDisplay[key]);
+    node.classList.add('counter-pop');
+    setTimeout(() => node.classList.remove('counter-pop'), 150);
+  }
+  requestAnimationFrame(() => animateCounter(key, target, node));
+}
+
 function renderResourceHUD() {
   const xp = document.getElementById('xp-display');
   const credits = document.getElementById('credits-display');
   const crystals = document.getElementById('crystals-display');
   const alerts = document.getElementById('alerts-summary');
-  if (xp) xp.textContent = GAME_STATE.xp;
-  if (credits) credits.textContent = GAME_STATE.credits;
-  if (crystals) crystals.textContent = GAME_STATE.crystals;
+
+  animateCounter('xp', GAME_STATE.xp, xp);
+  animateCounter('credits', GAME_STATE.credits, credits);
+  animateCounter('crystals', GAME_STATE.crystals, crystals);
 
   if (alerts) {
     alerts.textContent = GAME_STATE.activeAlerts.length > 0
@@ -54,14 +75,34 @@ function renderAgentStations() {
     card.style.backgroundImage = `url(${agent.avatar})`;
     card.title = `${agent.name} • ${agent.roomTheme}`;
     card.dataset.agentId = agent.id;
-    card.addEventListener('click', () => {
-      const msg = document.getElementById('global-status-message');
-      if (msg) msg.textContent = `${agent.name} online in ${agent.roomTheme}`;
-      switchScreen('agent-roster-view');
-      renderAgentRoster(agent.id);
-    });
+    card.addEventListener('click', () => openRoomOverlay(agent.id));
     grid.appendChild(card);
   });
+}
+
+function openRoomOverlay(agentId) {
+  const agent = AGENT_ROSTER[agentId];
+  if (!agent) return;
+
+  const overlay = document.getElementById('room-overlay');
+  const title = document.getElementById('room-overlay-title');
+  const role = document.getElementById('room-overlay-role');
+  const status = document.getElementById('room-overlay-status');
+  const tags = document.getElementById('room-overlay-tags');
+
+  if (title) title.textContent = `${agent.roomTheme} • ${agent.name}`;
+  if (role) role.textContent = `${agent.role} • Level ${agent.level}`;
+  if (status) status.textContent = `Status: ${agent.status} • Energy ${agent.energy} • Bond ${agent.affinity}`;
+  if (tags) tags.innerHTML = agent.specialties.map(tag => `<span>${tag}</span>`).join('');
+
+  overlay?.classList.add('show');
+
+  const msg = document.getElementById('global-status-message');
+  if (msg) msg.textContent = `${agent.name} station opened.`;
+}
+
+function closeRoomOverlay() {
+  document.getElementById('room-overlay')?.classList.remove('show');
 }
 
 function chooseQuestType(task) {
@@ -365,6 +406,18 @@ function calculateMissionGrade(quest, synergies) {
   return 'D';
 }
 
+function gradeToScore(grade) {
+  const map = { D: 30, C: 45, B: 60, A: 75, S: 85, SS: 92, Legendary: 98 };
+  return map[grade] || 0;
+}
+
+function nextRecommendation(grade, synergyCount) {
+  if (grade === 'Legendary' || grade === 'SS') return 'Push a Boss Mission and lock this squad as a preset.';
+  if (grade === 'S') return 'Add one affinity match to chase SS.';
+  if (synergyCount === 0) return 'Build around one named synergy combo before next deploy.';
+  return 'Swap one slot for a higher-energy specialist to raise efficiency.';
+}
+
 async function playDeployCinematic(quest, grade) {
   const overlay = document.getElementById('deploy-cinematic');
   if (!overlay) return;
@@ -388,12 +441,23 @@ async function handleDeployMission() {
 
   await playDeployCinematic(q, grade);
 
+  const efficiency = Math.min(99, Math.max(42, gradeToScore(grade) + (activeSynergy.length * 3)));
+  const alertsEncountered = q.urgency === 'high'
+    ? ['Urgent task spike', 'Risk alert']
+    : activeSynergy.length > 0
+      ? ['Combo ready']
+      : ['Needs support'];
+
   GAME_STATE.missionLog.unshift({
     questId: q.id,
     title: q.title,
     agents: [...GAME_STATE.selectedAgents],
     synergy: activeSynergy.map(s => s.name),
     grade,
+    efficiency,
+    rewards: { ...q.reward },
+    alertsEncountered,
+    recommendation: nextRecommendation(grade, activeSynergy.length),
     at: new Date().toISOString()
   });
 
@@ -423,12 +487,31 @@ function renderReports() {
     return;
   }
 
+  const avgEfficiency = Math.round(
+    GAME_STATE.missionLog.reduce((acc, log) => acc + (log.efficiency || 0), 0) / GAME_STATE.missionLog.length
+  );
+  const topGrade = GAME_STATE.missionLog
+    .map(log => gradeToScore(log.grade))
+    .reduce((a, b) => Math.max(a, b), 0);
+
   view.innerHTML = `
-    <div class="hud-panel">
-      <h2>Replay Log</h2>
-      <ul class="replay-list">
-        ${GAME_STATE.missionLog.map(log => `<li><strong>${log.title}</strong> • Grade ${log.grade} • ${new Date(log.at).toLocaleString()}</li>`).join('')}
-      </ul>
+    <div class="hud-panel report-summary">
+      <h2>Replay Command Summary</h2>
+      <p>Avg Efficiency: <strong>${avgEfficiency}%</strong></p>
+      <p>Best Grade Score: <strong>${topGrade}</strong></p>
+      <p>Total Runs: <strong>${GAME_STATE.missionLog.length}</strong></p>
+    </div>
+    <div class="replay-grid">
+      ${GAME_STATE.missionLog.map(log => `
+        <article class="hud-panel replay-card">
+          <h3>${log.title}</h3>
+          <p><strong>Grade:</strong> ${log.grade} • <strong>Efficiency:</strong> ${log.efficiency || 0}%</p>
+          <p><strong>Rewards:</strong> ${log.rewards?.xp || 0} XP, ${log.rewards?.credits || 0} Credits, ${log.rewards?.crystals || 0} Crystals</p>
+          <p><strong>Alerts:</strong> ${(log.alertsEncountered || []).join(', ')}</p>
+          <p><strong>Recommendation:</strong> ${log.recommendation || 'No recommendation yet.'}</p>
+          <p class="replay-time">${new Date(log.at).toLocaleString()}</p>
+        </article>
+      `).join('')}
     </div>
   `;
 }
@@ -467,6 +550,11 @@ function bindEvents() {
 
   document.querySelector('#mission-detail-modal .close-modal-button')?.addEventListener('click', hideMissionDetailModal);
   document.getElementById('deploy-mission-button')?.addEventListener('click', handleDeployMission);
+
+  document.getElementById('room-overlay-close')?.addEventListener('click', closeRoomOverlay);
+  document.getElementById('room-overlay')?.addEventListener('click', (event) => {
+    if (event.target.id === 'room-overlay') closeRoomOverlay();
+  });
 
   document.getElementById('quick-deploy-button')?.addEventListener('click', () => {
     switchScreen('quest-board-view');
