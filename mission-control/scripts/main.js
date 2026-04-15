@@ -275,6 +275,10 @@ function openRoomOverlay(agentId) {
     overlay.dataset.room = key;
   }
 
+  GAME_STATE.currentRoomAgent = agent.id;
+  renderRoomAmbience(agent);
+  playUiBlip('confirm');
+
   const msg = document.getElementById('global-status-message');
   if (msg) msg.textContent = `${agent.name} station opened.`;
 }
@@ -284,6 +288,40 @@ function closeRoomOverlay() {
   if (!overlay) return;
   overlay.classList.remove('show');
   delete overlay.dataset.room;
+  delete GAME_STATE.currentRoomAgent;
+  const ambience = document.getElementById('room-overlay-ambience');
+  if (ambience) ambience.innerHTML = '';
+  playUiBlip('soft');
+}
+
+function getRoomParticleTone(roomKey) {
+  if (roomKey.includes('mystic') || roomKey.includes('sanctum')) return 'violet';
+  if (roomKey.includes('healing') || roomKey.includes('grove')) return 'green';
+  if (roomKey.includes('code') || roomKey.includes('launch') || roomKey.includes('security')) return 'blue';
+  if (roomKey.includes('music') || roomKey.includes('vocal')) return 'gold';
+  return 'default';
+}
+
+function renderRoomAmbience(agent) {
+  const box = document.getElementById('room-overlay-ambience');
+  if (!box) return;
+  box.innerHTML = '';
+  if (!IMMERSION_STATE.ambienceFx) return;
+
+  const roomKey = agent.roomTheme.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const tone = getRoomParticleTone(roomKey);
+  box.dataset.tone = tone;
+
+  const count = 14;
+  for (let i = 0; i < count; i += 1) {
+    const p = document.createElement('i');
+    p.className = 'room-particle';
+    p.style.left = `${Math.random() * 100}%`;
+    p.style.top = `${Math.random() * 100}%`;
+    p.style.animationDelay = `${Math.random() * 2.2}s`;
+    p.style.animationDuration = `${2.6 + (Math.random() * 3.6)}s`;
+    box.appendChild(p);
+  }
 }
 
 function chooseQuestType(task) {
@@ -1024,7 +1062,10 @@ function bindEvents() {
 
   document.getElementById('toggle-ambience')?.addEventListener('change', (event) => {
     IMMERSION_STATE.ambienceFx = event.target.checked;
+    document.body.classList.toggle('ambience-off', !IMMERSION_STATE.ambienceFx);
     spawnBaseAmbience();
+    const activeAgentId = GAME_STATE.currentRoomAgent;
+    if (activeAgentId && AGENT_ROSTER[activeAgentId]) renderRoomAmbience(AGENT_ROSTER[activeAgentId]);
     saveRuntimeState();
   });
 
@@ -1053,6 +1094,7 @@ async function init() {
   const audioToggle = document.getElementById('toggle-audio');
   if (ambienceToggle) ambienceToggle.checked = IMMERSION_STATE.ambienceFx;
   if (audioToggle) audioToggle.checked = IMMERSION_STATE.uiAudio;
+  document.body.classList.toggle('ambience-off', !IMMERSION_STATE.ambienceFx);
 
   switchScreen(GAME_STATE.currentScreen);
   bindEvents();

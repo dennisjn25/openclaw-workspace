@@ -30,6 +30,7 @@
                     <img src="mission-control/assets/base-map-placeholder.png" alt="Base Map" class="base-map-placeholder">
                     <div id="ambience-layer" aria-hidden="true"></div>
                     <div id="day-night-cycle" aria-hidden="true"></div>
+                    <div id="map-sweep" aria-hidden="true"></div>
                     <div id="agent-stations-grid">
                         <!-- Agent room icons will be rendered here -->
                     </div>
@@ -161,6 +162,7 @@
         <div id="room-overlay" class="room-overlay" aria-live="polite">
             <div class="room-overlay-card">
                 <button id="room-overlay-close" class="room-overlay-close" aria-label="Close room panel">×</button>
+                <div id="room-overlay-ambience" aria-hidden="true"></div>
                 <h2 id="room-overlay-title">Agent Room</h2>
                 <p id="room-overlay-role"></p>
                 <p id="room-overlay-status"></p>
