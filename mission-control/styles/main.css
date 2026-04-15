@@ -221,6 +221,41 @@ body {
   box-shadow: 0 8px 18px rgba(53,170,102,.35);
 }
 
+.squad-presets {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.preset-button {
+  border: 1px solid #3f6296;
+  border-radius: 8px;
+  background: #13233f;
+  color: #cde0ff;
+  padding: 7px 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.preset-button:hover {
+  border-color: #6ad27b;
+}
+
+#live-alerts-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.alert-row {
+  font-size: 12px;
+}
+
+.alert-success { color: #7df0a2; }
+.alert-info { color: #8bc9ff; }
+.alert-warning { color: #ffbe6b; }
+
 #hud-bottom-bar {
   margin: 0 var(--spacing-md) var(--spacing-md);
   padding: 10px 14px;

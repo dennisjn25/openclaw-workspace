@@ -33,6 +33,15 @@ function renderResourceHUD() {
   }
 }
 
+function renderLiveAlerts() {
+  const list = document.getElementById('live-alerts-list');
+  if (!list) return;
+  const rows = GAME_STATE.activeAlerts.slice(0, 6);
+  list.innerHTML = rows.length
+    ? rows.map(a => `<li class="alert-row alert-${a.type || 'info'}">${a.message}</li>`).join('')
+    : '<li>All systems stable.</li>';
+}
+
 function renderAgentStations() {
   const grid = document.getElementById('agent-stations-grid');
   if (!grid) return;
@@ -309,6 +318,7 @@ function handleDeployMission() {
 
   saveQuests(quests);
   renderResourceHUD();
+  renderLiveAlerts();
   renderActiveMissions();
   hideMissionDetailModal();
   switchScreen('mission-control-home');
@@ -354,6 +364,7 @@ function bindEvents() {
     renderAgentRoster();
     renderQuestBoard();
     renderResourceHUD();
+    renderLiveAlerts();
     renderActiveMissions();
   });
 
@@ -373,6 +384,28 @@ function bindEvents() {
     updateNavState('quest-board-view');
     renderQuestBoard();
   });
+
+  document.querySelectorAll('.preset-button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const preset = btn.dataset.preset;
+      const presets = {
+        fast: ['sonic', 'tails', 'mario'],
+        safe: ['samus', 'link', 'zelda'],
+        creative: ['selphie', 'yuna', 'squall'],
+        profit: ['tom_nook', 'peach', 'rinoa']
+      };
+      GAME_STATE.selectedAgents = presets[preset] || [];
+      GAME_STATE.activeAlerts.unshift({
+        type: 'info',
+        message: `Preset armed: ${btn.textContent}`,
+        at: Date.now()
+      });
+      renderResourceHUD();
+      renderLiveAlerts();
+      const msg = document.getElementById('global-status-message');
+      if (msg) msg.textContent = `Kirby suggests ${btn.textContent}. Team ready.`;
+    });
+  });
 }
 
 async function init() {
@@ -381,7 +414,9 @@ async function init() {
 
   switchScreen(GAME_STATE.currentScreen);
   bindEvents();
+  GAME_STATE.activeAlerts.push({ type: 'info', message: 'Mission Control online. Quest board synchronized.', at: Date.now() });
   renderResourceHUD();
+  renderLiveAlerts();
 }
 
 init();
