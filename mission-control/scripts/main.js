@@ -346,6 +346,85 @@ function getAssignedAgents(mission) {
       : [];
 }
 
+function describeMissionOutput(mission, parentQuest) {
+  const assignedNames = getAssignedAgents(mission).map(id => AGENT_ROSTER[id]?.name || id);
+  const leadName = AGENT_ROSTER[mission.branchData?.lead]?.name || assignedNames[0] || 'Kirby';
+  const branchLabel = mission.branchData?.label || mission.title;
+  const baseName = parentQuest?.title || mission.title;
+
+  if (mission.branchId === 'product_build') {
+    return {
+      summary: `${leadName} turned ${baseName} into a scoped product build with feature direction and implementation path.`,
+      deliverables: ['MVP feature map', 'Primary user flow outline', 'Build-ready implementation sequence'],
+      validation: ['Scope matches the idea brief', 'Core user path is covered', 'Build sequence is actionable']
+    };
+  }
+  if (mission.branchId === 'automation') {
+    return {
+      summary: `${leadName} mapped the automation layer for ${baseName} and defined the handoff system.`,
+      deliverables: ['Workflow handoff map', 'Automation trigger list', 'Operations coverage notes'],
+      validation: ['Manual drag reduced', 'Handoffs are explicit', 'Automation path supports the goal']
+    };
+  }
+  if (mission.branchId === 'launch') {
+    return {
+      summary: `${leadName} prepared the launch route for ${baseName} with activation and distribution steps.`,
+      deliverables: ['Launch angle', 'Rollout sequence', 'Audience activation checklist'],
+      validation: ['Positioning is clear', 'Sequence is release-ready', 'Audience path is defined']
+    };
+  }
+  if (mission.branchId === 'content') {
+    return {
+      summary: `${leadName} created the content and messaging package for ${baseName}.`,
+      deliverables: ['Messaging direction', 'Content asset plan', 'Publishing prompt set'],
+      validation: ['Message matches audience', 'Assets support launch', 'Creative direction is coherent']
+    };
+  }
+  if (mission.branchId === 'research') {
+    return {
+      summary: `${leadName} assembled the research findings and decision support for ${baseName}.`,
+      deliverables: ['Research questions', 'Evidence summary', 'Decision-ready insight notes'],
+      validation: ['Questions were answered', 'Signal quality is strong', 'Findings support next action']
+    };
+  }
+
+  return {
+    summary: `${leadName} completed the work package for ${baseName}.`,
+    deliverables: ['Execution notes', 'Produced output bundle', 'Next-step recommendation'],
+    validation: ['Work package completed', 'Output is visible', 'Next action is clear']
+  };
+}
+
+function createMissionResult(mission, parentQuest, grade = 'A') {
+  const output = describeMissionOutput(mission, parentQuest);
+  return {
+    summary: output.summary,
+    deliverables: output.deliverables,
+    validation: output.validation,
+    reviewStatus: 'pending',
+    grade,
+    createdAt: new Date().toISOString()
+  };
+}
+
+function setMissionReviewStatus(missionId, reviewStatus) {
+  const { mission } = getMissionById(missionId);
+  if (!mission?.resultOutput) return;
+  mission.resultOutput.reviewStatus = reviewStatus;
+  mission.resultOutput.reviewedAt = new Date().toISOString();
+  saveRuntimeState();
+  renderQuestBoard();
+  renderIdeaFlowPanels();
+  renderReports();
+  if (GAME_STATE.selectedQuest?.id === missionId) showMissionDetailModal(missionId);
+}
+
+function reviewStatusLabel(status = 'pending') {
+  if (status === 'approved') return 'Looks Correct';
+  if (status === 'needs_revision') return 'Needs Revision';
+  return 'Pending Review';
+}
+
 function renumberChildMissionOrder(parentQuest) {
   const subquests = parentQuest?.ideaFlow?.subquests;
   if (!Array.isArray(subquests)) return;
@@ -509,6 +588,7 @@ function renderChildMissionCards(quest) {
               <span class="child-mission-meta">${AGENT_ROSTER[subquest.branchData?.lead]?.name || subquest.branchData?.lead || 'Branch lead'} • ${subquest.estimatedDuration}</span>
               <span class="child-mission-progress"><i style="width:${progress.percent}%"></i></span>
             </button>
+            ${subquest.resultOutput ? `<div class="child-mission-output"><strong>Output:</strong> ${subquest.resultOutput.summary}<span class="mission-subquest-review review-${subquest.resultOutput.reviewStatus || 'pending'}">${reviewStatusLabel(subquest.resultOutput.reviewStatus)}</span></div>` : ''}
             <div class="child-mission-actions">
               <button type="button" class="child-mission-inline-action" data-open-subquest="${subquest.id}">Open</button>
               <button type="button" class="child-mission-inline-action" data-toggle-subquest="${subquest.id}">${expanded ? 'Collapse' : 'Expand'}</button>
@@ -1626,6 +1706,7 @@ function renderMissionDetailSubquests(container, parentQuest, activeMissionId) {
             <span class="mission-subquest-meta">${subquest.status.replace('_', ' ')} • ${subquest.estimatedDuration}</span>
             <span class="mission-subquest-meta">Lead: ${AGENT_ROSTER[subquest.branchData?.lead]?.name || subquest.branchData?.lead || 'Unknown'}</span>
             <span class="mission-subquest-meta">Assigned: ${getAssignedAgents(subquest).map(id => AGENT_ROSTER[id]?.name || id).join(', ') || 'Unassigned'}</span>
+            ${subquest.resultOutput ? `<span class="mission-subquest-output">${subquest.resultOutput.summary}</span><span class="mission-subquest-review review-${subquest.resultOutput.reviewStatus || 'pending'}">${reviewStatusLabel(subquest.resultOutput.reviewStatus)}</span>` : ''}
             <span class="mission-subquest-progress"><i style="width:${progress.percent}%"></i></span>
           </button>
         `;
@@ -1638,6 +1719,43 @@ function renderMissionDetailSubquests(container, parentQuest, activeMissionId) {
 
   block.querySelectorAll('.mission-subquest-tile').forEach(button => {
     button.addEventListener('click', () => showMissionDetailModal(button.dataset.subquestId));
+  });
+}
+
+function renderMissionOutputSection(container, mission, parentQuest) {
+  container.querySelector('#mission-output-section')?.remove();
+  const output = mission.resultOutput;
+  if (!output) return;
+
+  const block = document.createElement('section');
+  block.id = 'mission-output-section';
+  block.className = 'mission-output-section';
+  block.innerHTML = `
+    <h3>Work Completed</h3>
+    <div class="mission-output-card">
+      <p class="mission-output-summary">${output.summary}</p>
+      <p class="mission-output-meta"><strong>Review:</strong> <span class="mission-subquest-review review-${output.reviewStatus || 'pending'}">${reviewStatusLabel(output.reviewStatus)}</span> • <strong>Grade:</strong> ${output.grade || 'A'}</p>
+      <div class="mission-output-grid">
+        <div>
+          <h4>Deliverables</h4>
+          <ul>${(output.deliverables || []).map(item => `<li>${item}</li>`).join('')}</ul>
+        </div>
+        <div>
+          <h4>Validation</h4>
+          <ul>${(output.validation || []).map(item => `<li>${item}</li>`).join('')}</ul>
+        </div>
+      </div>
+      <div class="mission-output-actions">
+        <button type="button" class="child-mission-inline-action" data-review-mission="${mission.id}" data-review-status="approved">Mark Correct</button>
+        <button type="button" class="child-mission-inline-action" data-review-mission="${mission.id}" data-review-status="needs_revision">Needs Revision</button>
+      </div>
+    </div>
+  `;
+
+  const deployBtn = document.getElementById('deploy-mission-button');
+  container.insertBefore(block, deployBtn);
+  block.querySelectorAll('[data-review-mission]').forEach(button => {
+    button.addEventListener('click', () => setMissionReviewStatus(button.dataset.reviewMission, button.dataset.reviewStatus));
   });
 }
 
@@ -1763,6 +1881,7 @@ function showMissionDetailModal(questId) {
   content.querySelector('#synergy-display')?.remove();
   content.querySelector('.squad-slots')?.remove();
   content.querySelector('#mission-subquest-section')?.remove();
+  content.querySelector('#mission-output-section')?.remove();
 
   const synergy = document.createElement('div');
   synergy.id = 'synergy-display';
@@ -1770,6 +1889,7 @@ function showMissionDetailModal(questId) {
   const deployBtn = document.getElementById('deploy-mission-button');
   renderSquadBuilder(content);
   content.insertBefore(synergy, deployBtn);
+  renderMissionOutputSection(content, mission, parentQuest);
   renderMissionDetailSubquests(content, parentQuest, mission.id);
 
   updateSynergyDisplay();
@@ -1868,11 +1988,14 @@ async function handleDeployMission() {
     synergy: activeSynergy.map(s => s.name),
     grade,
     efficiency,
+    output: createMissionResult(q, parentQuest, grade),
     rewards: { ...q.reward },
     alertsEncountered,
     recommendation: nextRecommendation(grade, activeSynergy.length),
     at: new Date().toISOString()
   });
+
+  q.resultOutput = createMissionResult(q, parentQuest, grade);
 
   if (q !== parentQuest) {
     (q.subtasks || []).forEach(step => { step.done = true; });
@@ -1943,6 +2066,7 @@ function renderReports() {
         <article class="hud-panel replay-card">
           <h3>${log.title}</h3>
           <p><strong>Grade:</strong> ${log.grade} • <strong>Efficiency:</strong> ${log.efficiency || 0}%</p>
+          <p><strong>Output:</strong> ${log.output?.summary || 'No output summary recorded.'}</p>
           <p><strong>Rewards:</strong> ${log.rewards?.xp || 0} XP, ${log.rewards?.credits || 0} Credits, ${log.rewards?.crystals || 0} Crystals</p>
           <p><strong>Alerts:</strong> ${(log.alertsEncountered || []).join(', ')}</p>
           <p><strong>Recommendation:</strong> ${log.recommendation || 'No recommendation yet.'}</p>
