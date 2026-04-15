@@ -169,6 +169,41 @@ body {
   animation: mapSweep 7s linear infinite;
 }
 
+#alert-routing-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+}
+
+.alert-route {
+  fill: none;
+  stroke: rgba(255, 157, 77, .95);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-dasharray: 8 8;
+  animation: routePulse 1.1s linear infinite;
+  filter: drop-shadow(0 0 5px rgba(255, 157, 77, .65));
+}
+
+.alert-route-node {
+  fill: rgba(255, 209, 102, .95);
+  animation: routeNodeBlink 0.95s ease-in-out infinite;
+}
+
+@keyframes routePulse {
+  from { stroke-dashoffset: 0; opacity: .72; }
+  to { stroke-dashoffset: -32; opacity: 1; }
+}
+
+@keyframes routeNodeBlink {
+  0% { transform: scale(1); opacity: .55; }
+  50% { transform: scale(1.35); opacity: 1; }
+  100% { transform: scale(1); opacity: .55; }
+}
+
 @keyframes mapSweep {
   from { transform: translateX(-130%); }
   to { transform: translateX(130%); }
@@ -176,7 +211,8 @@ body {
 
 body.ambience-off #map-sweep,
 body.ambience-off #day-night-cycle,
-body.ambience-off #ambience-layer {
+body.ambience-off #ambience-layer,
+body.ambience-off #alert-routing-layer {
   display: none;
 }
 

@@ -288,6 +288,60 @@ function renderAgentStations() {
     card.addEventListener('click', () => openRoomOverlay(agent.id));
     grid.appendChild(card);
   });
+
+  renderAlertRoutingLayer();
+}
+
+function renderAlertRoutingLayer() {
+  const svg = document.getElementById('alert-routing-layer');
+  const map = document.getElementById('base-map-area');
+  if (!svg || !map || !IMMERSION_STATE.ambienceFx) {
+    if (svg) svg.innerHTML = '';
+    return;
+  }
+
+  const kirbyNode = map.querySelector('.agent-station-icon[data-agent-id="kirby"]');
+  if (!kirbyNode) {
+    svg.innerHTML = '';
+    return;
+  }
+
+  const criticalNodes = [...map.querySelectorAll('.agent-station-icon.station-state-critical')]
+    .filter(node => node.dataset.agentId !== 'kirby');
+
+  if (!criticalNodes.length) {
+    svg.innerHTML = '';
+    return;
+  }
+
+  const mapRect = map.getBoundingClientRect();
+  const fromRect = kirbyNode.getBoundingClientRect();
+  const startX = (fromRect.left + (fromRect.width / 2)) - mapRect.left;
+  const startY = (fromRect.top + (fromRect.height / 2)) - mapRect.top;
+
+  svg.setAttribute('viewBox', `0 0 ${Math.max(1, mapRect.width)} ${Math.max(1, mapRect.height)}`);
+  svg.innerHTML = '';
+
+  criticalNodes.forEach(node => {
+    const toRect = node.getBoundingClientRect();
+    const endX = (toRect.left + (toRect.width / 2)) - mapRect.left;
+    const endY = (toRect.top + (toRect.height / 2)) - mapRect.top;
+
+    const ctrlX = (startX + endX) / 2;
+    const ctrlY = Math.min(startY, endY) - 24;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('class', 'alert-route');
+    path.setAttribute('d', `M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}`);
+    svg.appendChild(path);
+
+    const nodeDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    nodeDot.setAttribute('class', 'alert-route-node');
+    nodeDot.setAttribute('cx', `${endX}`);
+    nodeDot.setAttribute('cy', `${endY}`);
+    nodeDot.setAttribute('r', '3.4');
+    svg.appendChild(nodeDot);
+  });
 }
 
 function openRoomOverlay(agentId) {
@@ -1109,6 +1163,7 @@ function bindEvents() {
     IMMERSION_STATE.ambienceFx = event.target.checked;
     document.body.classList.toggle('ambience-off', !IMMERSION_STATE.ambienceFx);
     spawnBaseAmbience();
+    renderAlertRoutingLayer();
     const activeAgentId = GAME_STATE.currentRoomAgent;
     if (activeAgentId && AGENT_ROSTER[activeAgentId]) renderRoomAmbience(AGENT_ROSTER[activeAgentId]);
     saveRuntimeState();
@@ -1124,6 +1179,8 @@ function bindEvents() {
     if (!(event.target instanceof HTMLElement)) return;
     if (event.target.tagName === 'BUTTON') playUiBlip('soft');
   });
+
+  window.addEventListener('resize', () => renderAlertRoutingLayer());
 }
 
 async function init() {
