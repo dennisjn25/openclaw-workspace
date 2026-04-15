@@ -64,10 +64,27 @@
                 <section id="base-map-area">
                     <!-- Placeholder for interactive base map / room layout -->
                     <img src="mission-control/assets/base-map-placeholder.svg" alt="Base Map" class="base-map-placeholder">
+                    <div id="map-vignette" aria-hidden="true"></div>
+                    <div id="hex-grid-overlay" aria-hidden="true"></div>
                     <div id="ambience-layer" aria-hidden="true"></div>
                     <div id="day-night-cycle" aria-hidden="true"></div>
                     <div id="map-sweep" aria-hidden="true"></div>
                     <svg id="alert-routing-layer" aria-hidden="true"></svg>
+                    <div id="command-core" aria-hidden="true">
+                        <div class="core-ring ring-outer"></div>
+                        <div class="core-ring ring-mid"></div>
+                        <div class="core-ring ring-inner"></div>
+                        <div class="core-pulse"></div>
+                        <div class="core-label">Guild Core</div>
+                    </div>
+                    <div id="sector-labels" aria-hidden="true">
+                        <span class="sector-label sector-northwest">Strategy Wing</span>
+                        <span class="sector-label sector-north">Command Spine</span>
+                        <span class="sector-label sector-northeast">Research Arc</span>
+                        <span class="sector-label sector-southwest">Maker Bay</span>
+                        <span class="sector-label sector-south">Launch Floor</span>
+                        <span class="sector-label sector-southeast">Healing Grove</span>
+                    </div>
                     <div id="agent-stations-grid">
                         <!-- Agent room icons will be rendered here -->
                     </div>
