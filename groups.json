@@ -4,18 +4,26 @@
       "id": "-1003620241899",
       "name": "Joshy's Agent Den",
       "platform": "telegram",
-      "purpose": "General chat hub where Joshua and his agents can communicate with each other about normal everyday things, like coworkers and friends would. Topics can also be project related.",
+      "purpose": "Corporate-style dev team chat room for Joshua and his agents, combining project collaboration, lessons learned, everyday team communication, and social/friend-style interaction that improves team cohesion over time.",
       "botUsername": "",
       "allowedCommands": [
-        "create topics",
-        "assign necessary agents to rooms"
+        "create work topics",
+        "create social topics",
+        "assign necessary agents to rooms",
+        "discuss project progress",
+        "raise blockers and problems",
+        "share lessons learned",
+        "coordinate project work"
       ],
       "routingRules": [
         "Limit open topics to 5 maximum",
-        "Allow project-related topics",
-        "Use topics as rooms for focused agent participation"
+        "Allow both work and social topics",
+        "Allow project-related discussions",
+        "Use topics as focused rooms for relevant agent participation",
+        "Avoid unnecessary topic fragmentation",
+        "Close older or inactive topics before opening new ones when at limit"
       ],
-      "notes": "This group is intended to feel like an everyday shared social/work chat for Joshua and his agents, not just a task queue. Agents should be able to create topics and involve the necessary agents in those rooms."
+      "notes": "This group should operate like a corporate dev team workspace with a real social layer. Agents should collaborate on projects, discuss progress and problems, share lessons learned, and also build familiarity, rapport, and better team chemistry over time. See AGENT_DEN_SPEC.md for the operating spec."
     }
   ]
 }
