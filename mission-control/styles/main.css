@@ -1240,6 +1240,92 @@ body.ambience-off #alert-routing-layer {
   margin-top: 6px;
 }
 
+.child-mission-list,
+.mission-subquest-grid {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.child-mission-card,
+.mission-subquest-tile {
+  width: 100%;
+  border: 1px solid rgba(86, 180, 255, .28);
+  border-radius: 12px;
+  background: rgba(13, 25, 43, .9);
+  color: #e5efff;
+  padding: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.child-mission-card:hover,
+.mission-subquest-tile:hover,
+.mission-subquest-tile.active {
+  border-color: rgba(255, 209, 102, .72);
+  box-shadow: 0 0 0 1px rgba(255,209,102,.22) inset;
+}
+
+.child-mission-topline,
+.mission-subquest-title,
+.mission-subquest-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.child-mission-topline {
+  align-items: center;
+}
+
+.child-mission-topline strong,
+.mission-subquest-title {
+  font-size: 12px;
+  color: var(--color-accent-gold);
+}
+
+.child-mission-topline span:last-child,
+.child-mission-meta {
+  font-size: 11px;
+  color: #a9bfe1;
+}
+
+.child-mission-meta {
+  display: block;
+  margin-top: 6px;
+}
+
+.child-mission-progress,
+.mission-subquest-progress {
+  display: block;
+  margin-top: 8px;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #0f1a30;
+  border: 1px solid #31496f;
+}
+
+.child-mission-progress i,
+.mission-subquest-progress i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #ffd166, #56b4ff);
+}
+
+.mission-subquest-section {
+  margin: 12px 0;
+  padding-top: 8px;
+  border-top: 1px dashed #365581;
+}
+
+.mission-subquest-section h3 {
+  margin: 0 0 10px;
+  color: var(--color-accent-gold);
+  font-size: 12px;
+  font-family: var(--font-pixel);
+}
+
 #quest-filters {
   display: flex;
   flex-wrap: wrap;

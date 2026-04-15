@@ -93,10 +93,10 @@ function loadRuntimeState() {
     IMMERSION_STATE.uiAudio = state.immersion?.uiAudio ?? true;
     if (Array.isArray(state.quests) && state.quests.length) {
       quests = state.quests.map(quest => quest.ideaFlow
-        ? { ...quest, ideaFlow: normalizeIdeaFlow(quest.ideaFlow) }
+        ? { ...quest, ideaFlow: normalizeIdeaFlow(quest.ideaFlow, quest.id) }
         : quest);
     }
-    GAME_STATE.ideaFlow = normalizeIdeaFlow(state.ideaFlow) || null;
+    GAME_STATE.ideaFlow = normalizeIdeaFlow(state.ideaFlow, state.ideaFlow?.questId) || null;
   } catch (error) {
     console.warn('State load skipped:', error);
   }
@@ -106,13 +106,18 @@ function createIdeaFlowId() {
   return `idea_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 }
 
-function normalizeIdeaFlow(flow) {
+function normalizeIdeaFlow(flow, fallbackQuestId = null) {
   if (!flow?.idea || !flow?.polish || !flow?.orchestration) return flow;
-  if (Array.isArray(flow.orchestration.branches) && flow.orchestration.branches.length) return flow;
-
   const orchestration = buildKirbyOrchestration(flow.idea, flow.polish);
+  const questId = flow.questId || flow.parentQuestId || fallbackQuestId || createIdeaFlowId();
+  const subquests = Array.isArray(flow.subquests) && flow.subquests.length
+    ? flow.subquests
+    : buildKirbySubquests(flow.idea, flow.polish, orchestration, questId);
+
   return {
     ...flow,
+    questId,
+    subquests,
     orchestration: {
       ...flow.orchestration,
       ...orchestration,
@@ -293,11 +298,101 @@ function buildKirbyOrchestration(idea, polish) {
   };
 }
 
+function buildKirbySubquests(idea, polish, orchestration, parentQuestId) {
+  return orchestration.branches.map((branch, index) => ({
+    id: `${parentQuestId}::${branch.id}`,
+    parentQuestId,
+    branchId: branch.id,
+    title: `${branch.label} Mission`,
+    description: `${branch.summary} ${polish.value}`,
+    status: 'backlog',
+    type: branch.type,
+    difficulty: index === 0 ? 'medium' : 'easy',
+    urgency: idea.goal ? 'medium' : 'low',
+    risk: branch.id === 'launch' ? 'high' : 'medium',
+    estimatedDuration: `${Math.max(1, branch.phases.length)}h`,
+    reward: {
+      xp: 45 + (branch.phases.length * 12),
+      credits: 18 + (index * 6),
+      crystals: branch.id === 'product_build' || branch.id === 'automation' ? 1 : 0
+    },
+    recommendedAgents: [branch.lead, ...branch.support].slice(0, 3),
+    subtasks: branch.phases.map(phase => ({ title: phase.replace(/^\d+\.\d+\s+/, ''), done: false })),
+    comments: [
+      { author: 'Kirby', text: `${branch.label} branch activated.` },
+      { author: AGENT_ROSTER[branch.lead]?.name || branch.lead, text: branch.summary }
+    ],
+    branchData: branch
+  }));
+}
+
+function getQuestSubquests(quest) {
+  return Array.isArray(quest?.ideaFlow?.subquests) ? quest.ideaFlow.subquests : [];
+}
+
+function getMissionById(missionId) {
+  for (const quest of quests) {
+    if (quest.id === missionId) return { mission: quest, parentQuest: quest, isSubquest: false };
+    const subquest = getQuestSubquests(quest).find(child => child.id === missionId);
+    if (subquest) return { mission: subquest, parentQuest: quest, isSubquest: true };
+  }
+  return { mission: null, parentQuest: null, isSubquest: false };
+}
+
+function countMissionProgress(mission) {
+  const done = (mission.subtasks || []).filter(s => s.done).length;
+  const total = (mission.subtasks || []).length;
+  return {
+    done,
+    total,
+    percent: total > 0 ? Math.round((done / total) * 100) : 0
+  };
+}
+
+function renderChildMissionCards(quest) {
+  const subquests = getQuestSubquests(quest);
+  if (!subquests.length) return '';
+  return `
+    <div class="child-mission-list">
+      ${subquests.map(subquest => {
+        const progress = countMissionProgress(subquest);
+        return `
+          <button type="button" class="child-mission-card" data-subquest-id="${subquest.id}">
+            <span class="child-mission-topline">
+              <strong>${subquest.title}</strong>
+              <span>${subquest.status.replace('_', ' ')}</span>
+            </span>
+            <span class="child-mission-meta">${AGENT_ROSTER[subquest.branchData?.lead]?.name || subquest.branchData?.lead || 'Branch lead'} • ${subquest.estimatedDuration}</span>
+            <span class="child-mission-progress"><i style="width:${progress.percent}%"></i></span>
+          </button>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function syncIdeaQuestProgress(quest) {
+  const subquests = getQuestSubquests(quest);
+  if (!subquests.length) return;
+
+  const branchSubtasks = (quest.subtasks || []).filter(task => task.branchId);
+  branchSubtasks.forEach(task => {
+    const subquest = subquests.find(child => child.branchId === task.branchId);
+    if (!subquest) return;
+    task.done = subquest.status === 'done' || (subquest.subtasks || []).every(step => step.done);
+  });
+
+  const allDone = subquests.every(subquest => subquest.status === 'done' || (subquest.subtasks || []).every(step => step.done));
+  if (allDone) quest.status = 'review';
+}
+
 function buildIdeaQuest(idea, polish, orchestration) {
+  const questId = createIdeaFlowId();
   const recommendedAgents = orchestration.squad.slice(0, 3);
   const questType = orchestration.branches[0]?.type || (orchestration.track === 'Automation Mission' ? 'automation_missions' : orchestration.track === 'Creative Mission' ? 'creative_missions' : 'main_quests');
+  const subquests = buildKirbySubquests(idea, polish, orchestration, questId);
   return {
-    id: createIdeaFlowId(),
+    id: questId,
     title: idea.title,
     description: `${polish.spark} ${polish.value}`,
     status: 'backlog',
@@ -311,17 +406,19 @@ function buildIdeaQuest(idea, polish, orchestration) {
     subtasks: [
       { title: 'Selphie polish pass', done: true },
       { title: `Kirby routes ${orchestration.primaryBranch}`, done: true },
-      ...orchestration.branches.flatMap(branch => branch.phases.map(phase => ({ title: phase.replace(/^\d+\.\d+\s+/, ''), done: false })))
+      ...orchestration.branches.map(branch => ({ title: `${branch.label} child mission complete`, branchId: branch.id, done: false }))
     ],
     comments: [
       { author: 'Selphie', text: polish.hook },
       { author: 'Kirby', text: orchestration.commandNote }
     ],
     ideaFlow: {
+      questId,
       submittedAt: new Date().toISOString(),
       idea,
       polish,
-      orchestration
+      orchestration,
+      subquests
     }
   };
 }
@@ -360,6 +457,7 @@ function renderIdeaFlowPanels() {
     <div class="branch-pill-row">${flow.orchestration.branches.map(branch => `<span class="branch-pill">P${branch.priority} ${branch.label}</span>`).join('')}</div>
     <p><strong>Squad:</strong> ${flow.orchestration.squad.map(id => AGENT_ROSTER[id]?.name || id).join(', ')}</p>
     <ol>${flow.orchestration.phases.map(item => `<li>${item}</li>`).join('')}</ol>
+    ${renderChildMissionCards({ ideaFlow: flow })}
     <div class="branch-route-list">
       ${flow.orchestration.branches.map(branch => `
         <div class="branch-route-card">
@@ -369,6 +467,10 @@ function renderIdeaFlowPanels() {
       `).join('')}
     </div>
   `;
+
+  kirbyNode.querySelectorAll('.child-mission-card').forEach(button => {
+    button.addEventListener('click', () => showMissionDetailModal(button.dataset.subquestId));
+  });
 
   statusNode.textContent = `Selphie polished “${flow.idea.title}” and handed it to Kirby for orchestration.`;
 }
@@ -877,9 +979,8 @@ function renderQuestBoard() {
   }
 
   visible.forEach(quest => {
-    const done = (quest.subtasks || []).filter(s => s.done).length;
-    const total = (quest.subtasks || []).length;
-    const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+    syncIdeaQuestProgress(quest);
+    const { done, total, percent: progress } = countMissionProgress(quest);
 
     const card = document.createElement('article');
     card.className = `quest-card hud-panel status-${quest.status}`;
@@ -907,6 +1008,7 @@ function renderQuestBoard() {
           <div class="quest-branch-chip-row">
             ${quest.ideaFlow.orchestration.branches.map(branch => `<span class="quest-branch-chip">${branch.label}</span>`).join('')}
           </div>
+          ${renderChildMissionCards(quest)}
           <p class="quest-brief-line"><strong>Selphie:</strong> ${quest.ideaFlow.polish.spark}</p>
           <p class="quest-brief-line"><strong>Kirby:</strong> ${quest.ideaFlow.orchestration.commandNote}</p>
         ` : ''}
@@ -917,6 +1019,13 @@ function renderQuestBoard() {
     `;
 
     card.querySelector('.view-mission-details')?.addEventListener('click', () => showMissionDetailModal(quest.id));
+    card.querySelectorAll('.child-mission-card').forEach(button => {
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        showMissionDetailModal(button.dataset.subquestId);
+      });
+    });
     list.appendChild(card);
   });
 }
@@ -1279,6 +1388,39 @@ function bestSquadForQuest(quest) {
   return recommendBestSquad(quest);
 }
 
+function renderMissionDetailSubquests(container, parentQuest, activeMissionId) {
+  container.querySelector('#mission-subquest-section')?.remove();
+  const subquests = getQuestSubquests(parentQuest);
+  if (!subquests.length) return;
+
+  const block = document.createElement('section');
+  block.id = 'mission-subquest-section';
+  block.className = 'mission-subquest-section';
+  block.innerHTML = `
+    <h3>Child Missions</h3>
+    <div class="mission-subquest-grid">
+      ${subquests.map(subquest => {
+        const progress = countMissionProgress(subquest);
+        return `
+          <button type="button" class="mission-subquest-tile ${subquest.id === activeMissionId ? 'active' : ''}" data-subquest-id="${subquest.id}">
+            <span class="mission-subquest-title">${subquest.title}</span>
+            <span class="mission-subquest-meta">${subquest.status.replace('_', ' ')} • ${subquest.estimatedDuration}</span>
+            <span class="mission-subquest-meta">Lead: ${AGENT_ROSTER[subquest.branchData?.lead]?.name || subquest.branchData?.lead || 'Unknown'}</span>
+            <span class="mission-subquest-progress"><i style="width:${progress.percent}%"></i></span>
+          </button>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  const deployBtn = document.getElementById('deploy-mission-button');
+  container.insertBefore(block, deployBtn);
+
+  block.querySelectorAll('.mission-subquest-tile').forEach(button => {
+    button.addEventListener('click', () => showMissionDetailModal(button.dataset.subquestId));
+  });
+}
+
 function renderSquadBuilder(container) {
   const slots = document.createElement('div');
   slots.className = 'squad-slots';
@@ -1381,15 +1523,17 @@ function renderSquadBuilder(container) {
 }
 
 function showMissionDetailModal(questId) {
-  const quest = quests.find(q => q.id === questId);
-  if (!quest) return;
-  GAME_STATE.selectedQuest = quest;
-  GAME_STATE.selectedAgents = bestSquadForQuest(quest);
+  const { mission, parentQuest, isSubquest } = getMissionById(questId);
+  if (!mission || !parentQuest) return;
+  syncIdeaQuestProgress(parentQuest);
+  GAME_STATE.selectedQuest = mission;
+  GAME_STATE.selectedQuestParent = parentQuest;
+  GAME_STATE.selectedAgents = bestSquadForQuest(mission);
 
   const title = document.getElementById('mission-detail-title');
   const desc = document.getElementById('mission-detail-description');
-  if (title) title.textContent = quest.title;
-  if (desc) desc.innerHTML = `${quest.description || 'No mission briefing.'}<br><br><strong>Difficulty:</strong> ${quest.difficulty.toUpperCase()}<br><strong>Duration:</strong> ${quest.estimatedDuration}${quest.ideaFlow ? `<br><br><strong>Selphie Polish:</strong> ${quest.ideaFlow.polish.value}<br><strong>Kirby Track:</strong> ${quest.ideaFlow.orchestration.track}<br><strong>Primary Branch:</strong> ${quest.ideaFlow.orchestration.primaryBranch}<br><strong>Branch Routes:</strong> ${quest.ideaFlow.orchestration.branches.map(branch => `${branch.label} (${AGENT_ROSTER[branch.lead]?.name || branch.lead})`).join(' • ')}<br><strong>Orchestration Phases:</strong> ${quest.ideaFlow.orchestration.phases.join(' → ')}` : ''}`;
+  if (title) title.textContent = isSubquest ? `${parentQuest.title} • ${mission.title}` : mission.title;
+  if (desc) desc.innerHTML = `${mission.description || 'No mission briefing.'}<br><br><strong>Difficulty:</strong> ${mission.difficulty.toUpperCase()}<br><strong>Duration:</strong> ${mission.estimatedDuration}<br><strong>Status:</strong> ${mission.status.replace('_', ' ').toUpperCase()}${isSubquest ? `<br><strong>Branch Lead:</strong> ${AGENT_ROSTER[mission.branchData?.lead]?.name || mission.branchData?.lead}<br><strong>Support:</strong> ${(mission.branchData?.support || []).map(id => AGENT_ROSTER[id]?.name || id).join(', ')}<br><strong>Parent Quest:</strong> ${parentQuest.title}` : mission.ideaFlow ? `<br><br><strong>Selphie Polish:</strong> ${mission.ideaFlow.polish.value}<br><strong>Kirby Track:</strong> ${mission.ideaFlow.orchestration.track}<br><strong>Primary Branch:</strong> ${mission.ideaFlow.orchestration.primaryBranch}<br><strong>Branch Routes:</strong> ${mission.ideaFlow.orchestration.branches.map(branch => `${branch.label} (${AGENT_ROSTER[branch.lead]?.name || branch.lead})`).join(' • ')}<br><strong>Orchestration Phases:</strong> ${mission.ideaFlow.orchestration.phases.join(' → ')}` : ''}`;
 
   const modal = document.getElementById('mission-detail-modal');
   const content = modal?.querySelector('.modal-content');
@@ -1398,6 +1542,7 @@ function showMissionDetailModal(questId) {
   content.querySelector('#deploy-agent-selection')?.remove();
   content.querySelector('#synergy-display')?.remove();
   content.querySelector('.squad-slots')?.remove();
+  content.querySelector('#mission-subquest-section')?.remove();
 
   const synergy = document.createElement('div');
   synergy.id = 'synergy-display';
@@ -1405,6 +1550,7 @@ function showMissionDetailModal(questId) {
   const deployBtn = document.getElementById('deploy-mission-button');
   renderSquadBuilder(content);
   content.insertBefore(synergy, deployBtn);
+  renderMissionDetailSubquests(content, parentQuest, mission.id);
 
   updateSynergyDisplay();
   modal.classList.add('visible');
@@ -1476,6 +1622,7 @@ async function handleDeployMission() {
   if (!GAME_STATE.selectedQuest) return;
 
   const q = GAME_STATE.selectedQuest;
+  const parentQuest = GAME_STATE.selectedQuestParent || q;
   q.status = 'in_progress';
   if (!q.startedAt) q.startedAt = Date.now();
   GAME_STATE.xp += q.reward.xp;
@@ -1506,6 +1653,12 @@ async function handleDeployMission() {
     recommendation: nextRecommendation(grade, activeSynergy.length),
     at: new Date().toISOString()
   });
+
+  if (q !== parentQuest) {
+    (q.subtasks || []).forEach(step => { step.done = true; });
+    q.status = 'done';
+    syncIdeaQuestProgress(parentQuest);
+  }
 
   GAME_STATE.activeAlerts.unshift({
     type: 'success',
