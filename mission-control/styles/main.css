@@ -423,6 +423,27 @@ body.ambience-off #alert-routing-layer {
   gap: 8px;
 }
 
+.threat-actions {
+  margin-top: 6px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.threat-resolve-button {
+  border: 1px solid #4f73aa;
+  border-radius: 8px;
+  background: #132746;
+  color: #e8f2ff;
+  font-size: 11px;
+  padding: 5px 8px;
+  cursor: pointer;
+}
+
+.threat-resolve-button:hover {
+  border-color: #6ad27b;
+  color: #f7fff9;
+}
+
 .threat-head {
   margin-bottom: 4px;
 }

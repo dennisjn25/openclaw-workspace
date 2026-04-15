@@ -584,6 +584,30 @@ function focusThreatTarget(agentId, questId) {
   }, 520);
 }
 
+function resolveThreatNow(agentId, questId) {
+  if (!questId) return;
+  const quest = quests.find(q => q.id === questId);
+  if (!quest) return;
+
+  syncAgentStatuses();
+  if (agentId && AGENT_ROSTER[agentId]) {
+    openRoomOverlay(agentId);
+    setTimeout(() => closeRoomOverlay(), 420);
+  }
+
+  GAME_STATE.selectedQuest = quest;
+  GAME_STATE.selectedAgents = bestSquadForQuest(quest);
+
+  switchScreen('quest-board-view');
+  updateNavState('quest-board-view');
+  renderQuestBoard();
+  showMissionDetailModal(quest.id);
+  playUiBlip('confirm');
+
+  const msg = document.getElementById('global-status-message');
+  if (msg) msg.textContent = `Resolve Now armed for ${quest.title}. Best squad preloaded.`;
+}
+
 function renderAgentRoster(focusAgentId = null) {
   const grid = document.getElementById('agent-cards-grid');
   if (!grid) return;
@@ -755,6 +779,9 @@ function renderThreatConsole() {
         <div class="threat-meta">
           <span class="threat-quest">${row.questTitle}</span>
           <span class="threat-time">T-${formatCountdown(row.remainingMs)}</span>
+        </div>
+        <div class="threat-actions">
+          <button type="button" class="threat-resolve-button" data-agent-id="${row.agentId}" data-quest-id="${row.questId}">Resolve Now</button>
         </div>
       </div>
     `;
@@ -1343,6 +1370,13 @@ function bindEvents() {
 
   document.getElementById('threat-console-list')?.addEventListener('click', (event) => {
     if (!(event.target instanceof Element)) return;
+    const resolveButton = event.target.closest('.threat-resolve-button[data-agent-id][data-quest-id]');
+    if (resolveButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      resolveThreatNow(resolveButton.dataset.agentId, resolveButton.dataset.questId);
+      return;
+    }
     const row = event.target.closest('.threat-row[data-agent-id][data-quest-id]');
     if (!row) return;
     focusThreatTarget(row.dataset.agentId, row.dataset.questId);
