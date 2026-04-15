@@ -33,6 +33,26 @@ const IMMERSION_STATE = {
   dayNightTimer: null
 };
 
+const STATION_LAYOUT = {
+  kirby: { x: 50, y: 50 },
+  zelda: { x: 20, y: 18 },
+  tails: { x: 29, y: 70 },
+  link: { x: 81, y: 18 },
+  samus: { x: 82, y: 44 },
+  professor_oak: { x: 68, y: 17 },
+  tom_nook: { x: 18, y: 43 },
+  peach: { x: 67, y: 74 },
+  mario: { x: 19, y: 83 },
+  luigi: { x: 8, y: 65 },
+  sonic: { x: 83, y: 73 },
+  selphie: { x: 34, y: 18 },
+  squall: { x: 49, y: 83 },
+  rinoa: { x: 61, y: 84 },
+  edea: { x: 91, y: 59 },
+  yuna: { x: 75, y: 87 },
+  saria: { x: 92, y: 85 }
+};
+
 function safeParseNumber(value, fallback = 0) {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
@@ -297,6 +317,7 @@ function renderAgentStations() {
 
   const hotAgents = getHotAgents();
   Object.values(AGENT_ROSTER).forEach(agent => {
+    const layout = STATION_LAYOUT[agent.id] || { x: 50, y: 50 };
     const card = document.createElement('button');
     card.className = 'agent-station-icon';
     card.type = 'button';
@@ -306,6 +327,12 @@ function renderAgentStations() {
     card.dataset.threatTier = agent.threatTier || 'none';
     card.classList.add(`station-state-${agent.missionState || 'idle'}`);
     if (agent.threatTier && agent.threatTier !== 'none') card.classList.add(`station-threat-${agent.threatTier}`);
+    card.style.left = `${layout.x}%`;
+    card.style.top = `${layout.y}%`;
+    card.innerHTML = `
+      <span class="station-nameplate">${agent.name}</span>
+      <span class="station-roleplate">${agent.role}</span>
+    `;
     if (hotAgents.has(agent.id)) card.classList.add('is-hot');
     card.addEventListener('click', () => openRoomOverlay(agent.id));
     grid.appendChild(card);

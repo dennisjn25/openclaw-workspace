@@ -66,6 +66,12 @@
                     <img src="mission-control/assets/base-map-placeholder.svg" alt="Base Map" class="base-map-placeholder">
                     <div id="map-vignette" aria-hidden="true"></div>
                     <div id="hex-grid-overlay" aria-hidden="true"></div>
+                    <div class="map-frame-corners" aria-hidden="true">
+                        <i class="corner tl"></i>
+                        <i class="corner tr"></i>
+                        <i class="corner bl"></i>
+                        <i class="corner br"></i>
+                    </div>
                     <div id="ambience-layer" aria-hidden="true"></div>
                     <div id="day-night-cycle" aria-hidden="true"></div>
                     <div id="map-sweep" aria-hidden="true"></div>
@@ -87,6 +93,14 @@
                     </div>
                     <div id="agent-stations-grid">
                         <!-- Agent room icons will be rendered here -->
+                    </div>
+                    <div id="tactical-strip" aria-hidden="true">
+                        <div class="strip-title">Tactical Grid</div>
+                        <div class="strip-items">
+                            <span><i class="dot live"></i> Live Stations</span>
+                            <span><i class="dot critical"></i> Critical Route</span>
+                            <span><i class="dot core"></i> Guild Core</span>
+                        </div>
                     </div>
                 </section>
 
