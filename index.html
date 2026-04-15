@@ -197,6 +197,43 @@
                 <h1>Quest Board</h1>
             </header>
             <main>
+                <section id="idea-intake-panel" class="hud-panel">
+                    <div class="idea-intake-copy">
+                        <p class="idea-intake-kicker">Selphie → Kirby Flow</p>
+                        <h2>Pitch the idea, then let the guild build it</h2>
+                        <p>Tell Selphie the raw product idea. She sharpens the concept, then Kirby converts it into an orchestrated production quest.</p>
+                    </div>
+                    <form id="idea-intake-form">
+                        <div class="idea-intake-grid">
+                            <label>
+                                <span>Idea / Product Name</span>
+                                <input id="idea-title-input" name="ideaTitle" type="text" maxlength="120" placeholder="Example: Mission Control mobile companion" required>
+                            </label>
+                            <label>
+                                <span>Desired Outcome</span>
+                                <input id="idea-goal-input" name="ideaGoal" type="text" maxlength="160" placeholder="What should this unlock, fix, or create?">
+                            </label>
+                            <label class="idea-intake-full">
+                                <span>Core Idea for Selphie</span>
+                                <textarea id="idea-summary-input" name="ideaSummary" rows="5" maxlength="1200" placeholder="Drop the rough vision, messy notes, audience, features, vibe, offer, anything."></textarea>
+                            </label>
+                        </div>
+                        <div class="idea-intake-actions">
+                            <button type="submit" id="send-idea-button">Send to Selphie</button>
+                            <p id="idea-intake-status">Selphie is standing by in the Creative Room.</p>
+                        </div>
+                    </form>
+                </section>
+                <section id="idea-handoff-panel" class="hud-panel">
+                    <div class="handoff-column">
+                        <p class="idea-intake-kicker">Selphie Polish</p>
+                        <div id="selphie-polish-output" class="handoff-output empty">No polished brief yet.</div>
+                    </div>
+                    <div class="handoff-column">
+                        <p class="idea-intake-kicker">Kirby Orchestration</p>
+                        <div id="kirby-orchestration-output" class="handoff-output empty">No orchestration plan yet.</div>
+                    </div>
+                </section>
                 <div id="quest-filters">
                     <!-- Filter buttons for quest categories -->
                 </div>

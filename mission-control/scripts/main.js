@@ -69,7 +69,9 @@ function saveRuntimeState() {
       immersion: {
         ambienceFx: IMMERSION_STATE.ambienceFx,
         uiAudio: IMMERSION_STATE.uiAudio
-      }
+      },
+      quests,
+      ideaFlow: GAME_STATE.ideaFlow || null
     };
     window.localStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(snapshot));
   } catch (error) {
@@ -89,9 +91,200 @@ function loadRuntimeState() {
     GAME_STATE.missionLog = Array.isArray(state.missionLog) ? state.missionLog : [];
     IMMERSION_STATE.ambienceFx = state.immersion?.ambienceFx ?? true;
     IMMERSION_STATE.uiAudio = state.immersion?.uiAudio ?? true;
+    if (Array.isArray(state.quests) && state.quests.length) quests = state.quests;
+    GAME_STATE.ideaFlow = state.ideaFlow || null;
   } catch (error) {
     console.warn('State load skipped:', error);
   }
+}
+
+function createIdeaFlowId() {
+  return `idea_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+}
+
+function summarizeIdea(text = '') {
+  return text
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(/(?<=[.!?])\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .join(' ');
+}
+
+function inferAudience(text = '') {
+  const raw = text.toLowerCase();
+  if (raw.includes('founder') || raw.includes('business') || raw.includes('team')) return 'Operators and founders who need leverage';
+  if (raw.includes('music') || raw.includes('artist') || raw.includes('creative')) return 'Creators who want faster expression';
+  if (raw.includes('agent') || raw.includes('automation') || raw.includes('ai')) return 'Builders who want an AI-first workflow';
+  return 'People who want the result without extra friction';
+}
+
+function inferValueProposition(title, summary, goal) {
+  const raw = `${title} ${summary} ${goal}`.toLowerCase();
+  if (raw.includes('mobile')) return 'Turn the idea into an always-available companion experience.';
+  if (raw.includes('automation') || raw.includes('workflow')) return 'Replace drag with a system that compounds output.';
+  if (raw.includes('content') || raw.includes('brand')) return 'Package the idea so it lands clearly and spreads.';
+  if (raw.includes('dashboard') || raw.includes('control')) return 'Make complex moving parts feel commandable in one place.';
+  return 'Clarify the vision so the build can move with confidence.';
+}
+
+function inferDeliverables(text = '') {
+  const raw = text.toLowerCase();
+  const deliverables = ['Refined concept brief', 'Production quest with execution squad'];
+  if (raw.includes('app') || raw.includes('mobile') || raw.includes('web')) deliverables.push('Product scope and feature stack');
+  if (raw.includes('brand') || raw.includes('content') || raw.includes('launch')) deliverables.push('Messaging and launch positioning');
+  if (raw.includes('automation') || raw.includes('workflow') || raw.includes('agent')) deliverables.push('Automation plan and system handoffs');
+  return [...new Set(deliverables)].slice(0, 4);
+}
+
+function buildSelphiePolish({ title, summary, goal }) {
+  return {
+    spark: summarizeIdea(summary) || `${title} needs a cleaner shape before production starts.`,
+    audience: inferAudience(`${title} ${summary} ${goal}`),
+    value: inferValueProposition(title, summary, goal),
+    deliverables: inferDeliverables(`${title} ${summary} ${goal}`),
+    hook: `${title} should feel focused, desirable, and easy to act on.`
+  };
+}
+
+function inferProductionTrack(text = '') {
+  const raw = text.toLowerCase();
+  if (raw.includes('automation') || raw.includes('workflow') || raw.includes('agent')) return 'Automation Mission';
+  if (raw.includes('brand') || raw.includes('content') || raw.includes('launch')) return 'Launch Mission';
+  if (raw.includes('music') || raw.includes('creative')) return 'Creative Mission';
+  return 'Main Quest';
+}
+
+function buildKirbyOrchestration(idea, polish) {
+  const raw = `${idea.title} ${idea.summary} ${idea.goal}`.toLowerCase();
+  const squad = ['kirby', 'selphie'];
+  if (raw.includes('automation') || raw.includes('workflow') || raw.includes('agent')) squad.push('tails', 'mario');
+  if (raw.includes('brand') || raw.includes('launch') || raw.includes('content')) squad.push('rinoa', 'peach');
+  if (raw.includes('research') || raw.includes('market')) squad.push('link', 'zelda');
+  if (squad.length < 4) squad.push('zelda');
+
+  return {
+    track: inferProductionTrack(raw),
+    squad: [...new Set(squad)].slice(0, 5),
+    phases: [
+      `Selphie refines the concept into a clear build brief around “${idea.title}.”`,
+      'Kirby assembles the squad, scope, and first deployment path.',
+      `Team executes toward ${idea.goal || 'a polished first deliverable'}.`
+    ],
+    commandNote: `Kirby is orchestrating ${idea.title} with Selphie as the creative lead.`
+  };
+}
+
+function buildIdeaQuest(idea, polish, orchestration) {
+  const recommendedAgents = orchestration.squad.slice(0, 3);
+  return {
+    id: createIdeaFlowId(),
+    title: idea.title,
+    description: `${polish.spark} ${polish.value}`,
+    status: 'backlog',
+    type: orchestration.track === 'Automation Mission' ? 'automation_missions' : orchestration.track === 'Creative Mission' ? 'creative_missions' : 'main_quests',
+    difficulty: 'medium',
+    urgency: idea.goal ? 'medium' : 'low',
+    risk: 'medium',
+    estimatedDuration: '3h',
+    reward: { xp: 120, credits: 45, crystals: 2 },
+    recommendedAgents,
+    subtasks: [
+      { title: 'Selphie polish pass', done: true },
+      { title: 'Kirby orchestration map', done: false },
+      { title: 'First production sprint', done: false }
+    ],
+    comments: [
+      { author: 'Selphie', text: polish.hook },
+      { author: 'Kirby', text: orchestration.commandNote }
+    ],
+    ideaFlow: {
+      submittedAt: new Date().toISOString(),
+      idea,
+      polish,
+      orchestration
+    }
+  };
+}
+
+function renderIdeaFlowPanels() {
+  const selphieNode = document.getElementById('selphie-polish-output');
+  const kirbyNode = document.getElementById('kirby-orchestration-output');
+  const statusNode = document.getElementById('idea-intake-status');
+  const flow = GAME_STATE.ideaFlow;
+
+  if (!selphieNode || !kirbyNode || !statusNode) return;
+
+  if (!flow) {
+    selphieNode.classList.add('empty');
+    kirbyNode.classList.add('empty');
+    selphieNode.textContent = 'No polished brief yet.';
+    kirbyNode.textContent = 'No orchestration plan yet.';
+    statusNode.textContent = 'Selphie is standing by in the Creative Room.';
+    return;
+  }
+
+  selphieNode.classList.remove('empty');
+  kirbyNode.classList.remove('empty');
+
+  selphieNode.innerHTML = `
+    <h3>${flow.idea.title}</h3>
+    <p><strong>Spark:</strong> ${flow.polish.spark}</p>
+    <p><strong>Audience:</strong> ${flow.polish.audience}</p>
+    <p><strong>Value:</strong> ${flow.polish.value}</p>
+    <ul>${flow.polish.deliverables.map(item => `<li>${item}</li>`).join('')}</ul>
+  `;
+
+  kirbyNode.innerHTML = `
+    <h3>${flow.orchestration.track}</h3>
+    <p>${flow.orchestration.commandNote}</p>
+    <p><strong>Squad:</strong> ${flow.orchestration.squad.map(id => AGENT_ROSTER[id]?.name || id).join(', ')}</p>
+    <ol>${flow.orchestration.phases.map(item => `<li>${item}</li>`).join('')}</ol>
+  `;
+
+  statusNode.textContent = `Selphie polished “${flow.idea.title}” and handed it to Kirby for orchestration.`;
+}
+
+function handleIdeaIntake(event) {
+  event.preventDefault();
+  const title = document.getElementById('idea-title-input')?.value.trim();
+  const goal = document.getElementById('idea-goal-input')?.value.trim() || '';
+  const summary = document.getElementById('idea-summary-input')?.value.trim() || '';
+  if (!title || !summary) return;
+
+  const idea = { title, goal, summary };
+  const polish = buildSelphiePolish(idea);
+  const orchestration = buildKirbyOrchestration(idea, polish);
+  const quest = buildIdeaQuest(idea, polish, orchestration);
+
+  quests.unshift(quest);
+  GAME_STATE.ideaFlow = { idea, polish, orchestration, questId: quest.id };
+  questFilter = null;
+
+  saveRuntimeState();
+  renderIdeaFlowPanels();
+  renderQuestBoard();
+  renderActiveMissions();
+  renderHqSystems();
+  renderAgentStations();
+  renderThreatConsole();
+  updateAdvisorRecommendation();
+
+  const form = document.getElementById('idea-intake-form');
+  form?.reset();
+
+  const msg = document.getElementById('global-status-message');
+  if (msg) msg.textContent = `Selphie polished ${title}. Kirby converted it into a production quest.`;
+
+  GAME_STATE.activeAlerts.unshift({
+    type: 'success',
+    message: `Selphie polished ${title}. Kirby is orchestrating the build.`,
+    at: Date.now()
+  });
+  renderResourceHUD();
+  renderLiveAlerts();
+  pulseQuestCard(quest.id);
 }
 
 function ensureAudioContext() {
@@ -542,6 +735,7 @@ function renderQuestFilters() {
 }
 
 function renderQuestBoard() {
+  renderIdeaFlowPanels();
   renderQuestFilters();
   const list = document.getElementById('quest-list');
   if (!list) return;
@@ -577,6 +771,15 @@ function renderQuestBoard() {
           <div class="quest-progress-head"><span>Progress</span><span>${done}/${total || 0}</span></div>
           <div class="quest-progress-bar"><i style="width:${progress}%"></i></div>
         </div>
+        ${quest.ideaFlow ? `
+          <div class="quest-handoff-strip">
+            <span>Selphie polished</span>
+            <i></i>
+            <span>Kirby orchestrating</span>
+          </div>
+          <p class="quest-brief-line"><strong>Selphie:</strong> ${quest.ideaFlow.polish.spark}</p>
+          <p class="quest-brief-line"><strong>Kirby:</strong> ${quest.ideaFlow.orchestration.commandNote}</p>
+        ` : ''}
         <p class="reward-text">Reward: ${quest.reward.xp} XP • ${quest.reward.credits} Credits • ${quest.reward.crystals || 0} Crystals</p>
         <div class="recommended-agents">Recommended: ${quest.recommendedAgents.map(id => `<img src="${AGENT_ROSTER[id]?.avatar}" class="agent-thumbnail" title="${AGENT_ROSTER[id]?.name}">`).join('')}</div>
       </div>
@@ -1056,7 +1259,7 @@ function showMissionDetailModal(questId) {
   const title = document.getElementById('mission-detail-title');
   const desc = document.getElementById('mission-detail-description');
   if (title) title.textContent = quest.title;
-  if (desc) desc.innerHTML = `${quest.description || 'No mission briefing.'}<br><br><strong>Difficulty:</strong> ${quest.difficulty.toUpperCase()}<br><strong>Duration:</strong> ${quest.estimatedDuration}`;
+  if (desc) desc.innerHTML = `${quest.description || 'No mission briefing.'}<br><br><strong>Difficulty:</strong> ${quest.difficulty.toUpperCase()}<br><strong>Duration:</strong> ${quest.estimatedDuration}${quest.ideaFlow ? `<br><br><strong>Selphie Polish:</strong> ${quest.ideaFlow.polish.value}<br><strong>Kirby Track:</strong> ${quest.ideaFlow.orchestration.track}<br><strong>Orchestration Phases:</strong> ${quest.ideaFlow.orchestration.phases.join(' → ')}` : ''}`;
 
   const modal = document.getElementById('mission-detail-modal');
   const content = modal?.querySelector('.modal-content');
@@ -1331,6 +1534,7 @@ function bindEvents() {
 
   document.querySelector('#mission-detail-modal .close-modal-button')?.addEventListener('click', hideMissionDetailModal);
   document.getElementById('deploy-mission-button')?.addEventListener('click', handleDeployMission);
+  document.getElementById('idea-intake-form')?.addEventListener('submit', handleIdeaIntake);
 
   document.getElementById('room-overlay-close')?.addEventListener('click', closeRoomOverlay);
   document.getElementById('room-overlay')?.addEventListener('click', (event) => {
@@ -1442,6 +1646,7 @@ async function init() {
   renderHqSystems();
   renderThreatConsole();
   updateAdvisorRecommendation();
+  renderIdeaFlowPanels();
   spawnBaseAmbience();
   startDayNightCycle();
   startEventSimulation();
