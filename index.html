@@ -28,6 +28,7 @@
                 <section id="base-map-area">
                     <!-- Placeholder for interactive base map / room layout -->
                     <img src="mission-control/assets/base-map-placeholder.png" alt="Base Map" class="base-map-placeholder">
+                    <div id="ambience-layer" aria-hidden="true"></div>
                     <div id="agent-stations-grid">
                         <!-- Agent room icons will be rendered here -->
                     </div>
@@ -117,7 +118,8 @@
                 <h1>Upgrades & Unlocks</h1>
             </header>
             <main>
-                <p>Unlock new rooms, agent capabilities, and base expansions here!</p>
+                <section class="hud-panel upgrades-summary" id="upgrades-summary"></section>
+                <section class="upgrades-grid" id="upgrades-grid"></section>
             </main>
         </div>
 

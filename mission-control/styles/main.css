@@ -139,6 +139,29 @@ body {
   filter: saturate(1.25) brightness(.85);
 }
 
+#ambience-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.ambience-dot {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(114,231,255,.95), rgba(114,231,255,.2));
+  box-shadow: 0 0 8px rgba(114,231,255,.8);
+  animation: ambienceFloat linear infinite;
+}
+
+@keyframes ambienceFloat {
+  0% { transform: translateY(0) scale(.8); opacity: .2; }
+  50% { transform: translateY(-12px) scale(1.15); opacity: .9; }
+  100% { transform: translateY(-24px) scale(.8); opacity: .1; }
+}
+
 #agent-stations-grid {
   position: absolute;
   inset: 0;
@@ -415,6 +438,69 @@ body {
   overflow: auto;
 }
 
+#upgrades-view main {
+  overflow: auto;
+  display: grid;
+  gap: 12px;
+}
+
+.upgrades-summary {
+  padding: 12px;
+}
+
+.upgrades-summary h2 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-family: var(--font-pixel);
+  color: var(--color-accent-gold);
+}
+
+.upgrades-summary p {
+  margin: 6px 0;
+}
+
+.upgrades-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.upgrade-card {
+  padding: 12px;
+}
+
+.upgrade-card h3 {
+  margin: 0 0 8px;
+  color: var(--color-accent-gold);
+  font-size: 14px;
+}
+
+.upgrade-card p {
+  margin: 6px 0;
+  font-size: 13px;
+}
+
+.upgrade-buy {
+  margin-top: 8px;
+  width: 100%;
+  border: 1px solid #42679e;
+  border-radius: 10px;
+  background: #142845;
+  color: #e6f0ff;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.upgrade-buy:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+}
+
+.upgrade-card.unlocked {
+  border-color: #6ad27b;
+  box-shadow: 0 0 0 1px rgba(106,210,123,.35) inset;
+}
+
 #agent-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -637,6 +723,22 @@ body {
 .room-overlay.show {
   opacity: 1;
   pointer-events: auto;
+}
+
+.room-overlay[data-room*="mystic"] .room-overlay-card,
+.room-overlay[data-room*="sanctum"] .room-overlay-card {
+  background: radial-gradient(circle at 50% 0, rgba(187,116,255,.3), rgba(16,20,43,.96));
+}
+
+.room-overlay[data-room*="healing"] .room-overlay-card,
+.room-overlay[data-room*="grove"] .room-overlay-card {
+  background: radial-gradient(circle at 50% 0, rgba(106,210,123,.28), rgba(12,24,34,.96));
+}
+
+.room-overlay[data-room*="code"] .room-overlay-card,
+.room-overlay[data-room*="launch"] .room-overlay-card,
+.room-overlay[data-room*="security"] .room-overlay-card {
+  background: radial-gradient(circle at 50% 0, rgba(86,180,255,.3), rgba(12,20,40,.96));
 }
 
 .room-overlay-card {

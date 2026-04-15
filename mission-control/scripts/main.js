@@ -5,6 +5,14 @@ let quests = [];
 let questFilter = null;
 const hudDisplay = { xp: 0, credits: 0, crystals: 0 };
 
+const UPGRADE_CATALOG = [
+  { id: 'hq_console_mk2', name: 'HQ Console MK-II', costCredits: 120, costCrystals: 2, effect: '+10% command speed', room: 'HQ Desk' },
+  { id: 'strategy_orrery', name: 'Strategy Orrery', costCredits: 90, costCrystals: 2, effect: 'Better quest recommendations', room: 'Strategy Chamber' },
+  { id: 'codeforge_overclock', name: 'Codeforge Overclock', costCredits: 140, costCrystals: 3, effect: '+15% automation output', room: 'Code Lab' },
+  { id: 'social_signal_beacon', name: 'Signal Beacon', costCredits: 110, costCrystals: 2, effect: '+12% launch momentum', room: 'Social Hub' },
+  { id: 'healing_grove_halo', name: 'Grove Halo', costCredits: 80, costCrystals: 1, effect: 'Lower recovery time', room: 'Healing Grove' }
+];
+
 function switchScreen(screenId) {
   document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
   const next = document.getElementById(screenId);
@@ -63,6 +71,21 @@ function renderLiveAlerts() {
     : '<li>All systems stable.</li>';
 }
 
+function spawnBaseAmbience() {
+  const layer = document.getElementById('ambience-layer');
+  if (!layer || layer.childElementCount > 0) return;
+
+  for (let i = 0; i < 20; i += 1) {
+    const dot = document.createElement('i');
+    dot.className = 'ambience-dot';
+    dot.style.left = `${Math.random() * 100}%`;
+    dot.style.top = `${Math.random() * 100}%`;
+    dot.style.animationDelay = `${Math.random() * 3}s`;
+    dot.style.animationDuration = `${4 + Math.random() * 5}s`;
+    layer.appendChild(dot);
+  }
+}
+
 function renderAgentStations() {
   const grid = document.getElementById('agent-stations-grid');
   if (!grid) return;
@@ -95,14 +118,21 @@ function openRoomOverlay(agentId) {
   if (status) status.textContent = `Status: ${agent.status} • Energy ${agent.energy} • Bond ${agent.affinity}`;
   if (tags) tags.innerHTML = agent.specialties.map(tag => `<span>${tag}</span>`).join('');
 
-  overlay?.classList.add('show');
+  if (overlay) {
+    overlay.classList.add('show');
+    const key = agent.roomTheme.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    overlay.dataset.room = key;
+  }
 
   const msg = document.getElementById('global-status-message');
   if (msg) msg.textContent = `${agent.name} station opened.`;
 }
 
 function closeRoomOverlay() {
-  document.getElementById('room-overlay')?.classList.remove('show');
+  const overlay = document.getElementById('room-overlay');
+  if (!overlay) return;
+  overlay.classList.remove('show');
+  delete overlay.dataset.room;
 }
 
 function chooseQuestType(task) {
@@ -516,6 +546,49 @@ function renderReports() {
   `;
 }
 
+function renderUpgrades() {
+  const summary = document.getElementById('upgrades-summary');
+  const grid = document.getElementById('upgrades-grid');
+  if (!summary || !grid) return;
+
+  summary.innerHTML = `
+    <h2>Command Center Progression</h2>
+    <p>Credits: <strong>${GAME_STATE.credits}</strong> • Crystals: <strong>${GAME_STATE.crystals}</strong></p>
+    <p>Unlocked: <strong>${(GAME_STATE.unlockedUpgrades || []).length}</strong> / ${UPGRADE_CATALOG.length}</p>
+  `;
+
+  grid.innerHTML = '';
+  UPGRADE_CATALOG.forEach(upg => {
+    const unlocked = (GAME_STATE.unlockedUpgrades || []).includes(upg.id);
+    const affordable = GAME_STATE.credits >= upg.costCredits && GAME_STATE.crystals >= upg.costCrystals;
+
+    const card = document.createElement('article');
+    card.className = `hud-panel upgrade-card ${unlocked ? 'unlocked' : ''}`;
+    card.innerHTML = `
+      <h3>${upg.name}</h3>
+      <p><strong>Room:</strong> ${upg.room}</p>
+      <p><strong>Effect:</strong> ${upg.effect}</p>
+      <p><strong>Cost:</strong> ${upg.costCredits} Credits • ${upg.costCrystals} Crystals</p>
+      <button class="upgrade-buy" ${unlocked || !affordable ? 'disabled' : ''}>
+        ${unlocked ? 'Unlocked' : affordable ? 'Unlock Upgrade' : 'Insufficient Resources'}
+      </button>
+    `;
+
+    card.querySelector('.upgrade-buy')?.addEventListener('click', () => {
+      if (unlocked || !affordable) return;
+      GAME_STATE.credits -= upg.costCredits;
+      GAME_STATE.crystals -= upg.costCrystals;
+      GAME_STATE.unlockedUpgrades.push(upg.id);
+      GAME_STATE.activeAlerts.unshift({ type: 'success', message: `Upgrade unlocked: ${upg.name}`, at: Date.now() });
+      renderResourceHUD();
+      renderLiveAlerts();
+      renderUpgrades();
+    });
+
+    grid.appendChild(card);
+  });
+}
+
 function handleNavigation(event) {
   const target = event.currentTarget.dataset.targetScreen;
   if (!target) return;
@@ -526,6 +599,7 @@ function handleNavigation(event) {
   if (target === 'quest-board-view') renderQuestBoard();
   if (target === 'agent-roster-view') renderAgentRoster();
   if (target === 'reports-view') renderReports();
+  if (target === 'upgrades-view') renderUpgrades();
 }
 
 function bindEvents() {
@@ -538,6 +612,7 @@ function bindEvents() {
     renderResourceHUD();
     renderLiveAlerts();
     renderActiveMissions();
+    spawnBaseAmbience();
   });
 
   document.querySelectorAll('#main-navigation .nav-button').forEach(btn => {
@@ -589,11 +664,14 @@ async function init() {
   const loaded = await loadQuests();
   quests = hydrateQuests(loaded);
 
+  if (!Array.isArray(GAME_STATE.unlockedUpgrades)) GAME_STATE.unlockedUpgrades = [];
+
   switchScreen(GAME_STATE.currentScreen);
   bindEvents();
   GAME_STATE.activeAlerts.push({ type: 'info', message: 'Mission Control online. Quest board synchronized.', at: Date.now() });
   renderResourceHUD();
   renderLiveAlerts();
+  spawnBaseAmbience();
 }
 
 init();
