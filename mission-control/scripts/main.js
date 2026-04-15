@@ -24,6 +24,7 @@ const LIVE_EVENT_TYPES = [
 ];
 
 let eventSimulationTimer = null;
+let threatConsoleTimer = null;
 const STATE_STORAGE_KEY = 'mission-control-v1-state';
 const IMMERSION_STATE = {
   ambienceFx: true,
@@ -634,6 +635,113 @@ function renderHqSystems() {
   `;
 }
 
+function parseDurationHours(estimatedDuration) {
+  const raw = String(estimatedDuration || '').toLowerCase();
+  const match = raw.match(/(\d+(?:\.\d+)?)\s*h/);
+  const hours = match ? Number(match[1]) : 1;
+  return Number.isFinite(hours) ? Math.max(1, hours) : 1;
+}
+
+function getQuestStartMs(quest) {
+  if (quest.startedAt) {
+    const ms = Number(quest.startedAt);
+    if (Number.isFinite(ms)) return ms;
+  }
+  const created = Date.parse(quest.createdAt || '');
+  if (Number.isFinite(created)) return created;
+  return Date.now() - (30 * 60 * 1000);
+}
+
+function getThreatRows() {
+  const rows = [];
+  const now = Date.now();
+
+  quests
+    .filter(q => q.status === 'in_progress' || q.status === 'review')
+    .forEach(quest => {
+      const involved = quest.recommendedAgents || [];
+      const durationMs = parseDurationHours(quest.estimatedDuration) * 60 * 60 * 1000;
+      const elapsed = Math.max(0, now - getQuestStartMs(quest));
+      const remainingMs = Math.max(0, durationMs - elapsed);
+      const riskWeight = quest.risk === 'high' ? 40 : quest.risk === 'medium' ? 20 : 10;
+      const urgencyWeight = quest.urgency === 'high' ? 40 : quest.urgency === 'medium' ? 20 : 10;
+      const statusWeight = quest.status === 'review' ? 15 : 25;
+      const pressure = Math.min(100, riskWeight + urgencyWeight + statusWeight);
+
+      involved.forEach(agentId => {
+        rows.push({
+          agentId,
+          questId: quest.id,
+          pressure,
+          remainingMs,
+          questTitle: quest.title
+        });
+      });
+    });
+
+  const grouped = Object.values(rows.reduce((acc, row) => {
+    if (!acc[row.agentId]) {
+      acc[row.agentId] = {
+        agentId: row.agentId,
+        pressure: 0,
+        remainingMs: row.remainingMs,
+        questTitle: row.questTitle
+      };
+    }
+    acc[row.agentId].pressure = Math.max(acc[row.agentId].pressure, row.pressure);
+    if (row.remainingMs < acc[row.agentId].remainingMs) {
+      acc[row.agentId].remainingMs = row.remainingMs;
+      acc[row.agentId].questTitle = row.questTitle;
+    }
+    return acc;
+  }, {}));
+
+  return grouped.sort((a, b) => b.pressure - a.pressure || a.remainingMs - b.remainingMs).slice(0, 3);
+}
+
+function formatCountdown(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const mm = String(Math.floor(s / 60)).padStart(2, '0');
+  const ss = String(s % 60).padStart(2, '0');
+  return `${mm}:${ss}`;
+}
+
+function renderThreatConsole() {
+  const box = document.getElementById('threat-console-list');
+  if (!box) return;
+
+  const rows = getThreatRows();
+  if (!rows.length) {
+    box.innerHTML = '<div class="threat-row calm">No active pressure.</div>';
+    return;
+  }
+
+  box.innerHTML = rows.map((row, idx) => {
+    const agent = AGENT_ROSTER[row.agentId];
+    const tier = row.pressure >= 90 ? 'systemic' : row.pressure >= 75 ? 'severe' : 'high';
+    return `
+      <div class="threat-row tier-${tier}">
+        <div class="threat-head">
+          <span class="threat-rank">#${idx + 1}</span>
+          <span class="threat-agent">${agent?.name || row.agentId}</span>
+          <span class="threat-pressure">${row.pressure}%</span>
+        </div>
+        <div class="threat-meta">
+          <span class="threat-quest">${row.questTitle}</span>
+          <span class="threat-time">T-${formatCountdown(row.remainingMs)}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function startThreatConsoleTicker() {
+  if (threatConsoleTimer) return;
+  threatConsoleTimer = setInterval(() => {
+    if (GAME_STATE.currentScreen !== 'login-screen') renderThreatConsole();
+  }, 1000);
+}
+
 function updateAdvisorRecommendation() {
   const node = document.getElementById('advisor-recommendation');
   if (!node) return;
@@ -693,6 +801,7 @@ function simulateLiveEvent() {
   renderActiveMissions();
   renderHqSystems();
   renderAgentStations();
+  renderThreatConsole();
   updateAdvisorRecommendation();
 
   if (GAME_STATE.currentScreen === 'quest-board-view') renderQuestBoard();
@@ -954,6 +1063,7 @@ async function handleDeployMission() {
 
   const q = GAME_STATE.selectedQuest;
   q.status = 'in_progress';
+  if (!q.startedAt) q.startedAt = Date.now();
   GAME_STATE.xp += q.reward.xp;
   GAME_STATE.credits += q.reward.credits;
   GAME_STATE.crystals += q.reward.crystals || 0;
@@ -996,6 +1106,7 @@ async function handleDeployMission() {
   renderActiveMissions();
   renderHqSystems();
   renderAgentStations();
+  renderThreatConsole();
   updateAdvisorRecommendation();
   hideMissionDetailModal();
   switchScreen('mission-control-home');
@@ -1124,6 +1235,7 @@ function bindEvents() {
     renderLiveAlerts();
     renderActiveMissions();
     renderHqSystems();
+    renderThreatConsole();
     updateAdvisorRecommendation();
     spawnBaseAmbience();
   });
@@ -1175,6 +1287,7 @@ function bindEvents() {
       renderResourceHUD();
       renderLiveAlerts();
       renderHqSystems();
+      renderThreatConsole();
       updateAdvisorRecommendation();
       const msg = document.getElementById('global-status-message');
       if (msg) msg.textContent = `Kirby suggests ${btn.textContent}. Team ready.`;
@@ -1226,10 +1339,12 @@ async function init() {
   renderResourceHUD();
   renderLiveAlerts();
   renderHqSystems();
+  renderThreatConsole();
   updateAdvisorRecommendation();
   spawnBaseAmbience();
   startDayNightCycle();
   startEventSimulation();
+  startThreatConsoleTicker();
 }
 
 init();
