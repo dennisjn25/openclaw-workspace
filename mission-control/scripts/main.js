@@ -1230,6 +1230,20 @@ function renderQuestFilters() {
   });
 }
 
+function getQuestOutputPreview(quest) {
+  const subquests = getQuestSubquests(quest);
+  const completed = subquests.filter(subquest => subquest.resultOutput);
+  if (!completed.length) return '';
+  const latest = completed[completed.length - 1];
+  return `
+    <div class="quest-output-preview">
+      <span class="quest-output-label">Latest output</span>
+      <p>${latest.resultOutput.summary}</p>
+      <span class="mission-subquest-review review-${latest.resultOutput.reviewStatus || 'pending'}">${reviewStatusLabel(latest.resultOutput.reviewStatus)}</span>
+    </div>
+  `;
+}
+
 function renderQuestBoard() {
   renderIdeaFlowPanels();
   renderQuestFilters();
@@ -1254,14 +1268,22 @@ function renderQuestBoard() {
     card.dataset.questId = quest.id;
     card.innerHTML = `
       <div class="quest-card-header">
-        <h3>${QUEST_CATEGORIES.find(c => c.id === quest.type)?.icon || '❓'} ${quest.title}</h3>
-        <span class="quest-difficulty difficulty-${quest.difficulty}">${quest.difficulty.toUpperCase()}</span>
+        <div class="quest-title-block">
+          <span class="quest-category-kicker">${QUEST_CATEGORIES.find(c => c.id === quest.type)?.icon || '❓'} ${QUEST_CATEGORIES.find(c => c.id === quest.type)?.name || 'Quest'}</span>
+          <h3>${quest.title}</h3>
+        </div>
+        <div class="quest-header-badges">
+          <span class="quest-status-pill status-${quest.status}">${quest.status.replace('_', ' ')}</span>
+          <span class="quest-difficulty difficulty-${quest.difficulty}">${quest.difficulty.toUpperCase()}</span>
+        </div>
       </div>
       <div class="quest-card-body">
-        <p>Status: <span class="status-text">${quest.status.replace('_', ' ').toUpperCase()}</span></p>
-        <p>Urgency: <span class="urgency-${quest.urgency}">${quest.urgency.toUpperCase()}</span></p>
-        <p>Risk: <span class="urgency-${quest.risk === 'high' ? 'high' : quest.risk === 'low' ? 'low' : 'medium'}">${quest.risk.toUpperCase()}</span></p>
-        <p>ETA: ${quest.estimatedDuration}</p>
+        <div class="quest-stat-grid">
+          <div class="quest-stat-card"><span>Urgency</span><strong class="urgency-${quest.urgency}">${quest.urgency.toUpperCase()}</strong></div>
+          <div class="quest-stat-card"><span>Risk</span><strong class="urgency-${quest.risk === 'high' ? 'high' : quest.risk === 'low' ? 'low' : 'medium'}">${quest.risk.toUpperCase()}</strong></div>
+          <div class="quest-stat-card"><span>ETA</span><strong>${quest.estimatedDuration}</strong></div>
+          <div class="quest-stat-card"><span>Reward</span><strong>${quest.reward.xp} XP</strong></div>
+        </div>
         <div class="quest-progress">
           <div class="quest-progress-head"><span>Progress</span><span>${done}/${total || 0}</span></div>
           <div class="quest-progress-bar"><i style="width:${progress}%"></i></div>
@@ -1279,8 +1301,11 @@ function renderQuestBoard() {
           <p class="quest-brief-line"><strong>Selphie:</strong> ${quest.ideaFlow.polish.spark}</p>
           <p class="quest-brief-line"><strong>Kirby:</strong> ${quest.ideaFlow.orchestration.commandNote}</p>
         ` : ''}
-        <p class="reward-text">Reward: ${quest.reward.xp} XP • ${quest.reward.credits} Credits • ${quest.reward.crystals || 0} Crystals</p>
-        <div class="recommended-agents">Recommended: ${quest.recommendedAgents.map(id => `<img src="${AGENT_ROSTER[id]?.avatar}" class="agent-thumbnail" title="${AGENT_ROSTER[id]?.name}">`).join('')}</div>
+        ${getQuestOutputPreview(quest)}
+        <div class="quest-card-footer">
+          <p class="reward-text">Reward: ${quest.reward.xp} XP • ${quest.reward.credits} Credits • ${quest.reward.crystals || 0} Crystals</p>
+          <div class="recommended-agents"><span class="recommended-label">Recommended squad</span>${quest.recommendedAgents.map(id => `<img src="${AGENT_ROSTER[id]?.avatar}" class="agent-thumbnail" title="${AGENT_ROSTER[id]?.name}">`).join('')}</div>
+        </div>
       </div>
       <button class="view-mission-details nav-button" data-quest-id="${quest.id}">Mission Detail</button>
     `;

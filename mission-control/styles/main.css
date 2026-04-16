@@ -1054,20 +1054,38 @@ body.ambience-off #alert-routing-layer {
 #quest-board-view {
   overflow-y: auto;
   overscroll-behavior: contain;
+  padding: var(--spacing-md);
+  background:
+    radial-gradient(circle at 50% 0, rgba(86,180,255,.08), transparent 18%),
+    linear-gradient(180deg, rgba(7,12,24,.96), rgba(5,10,19,.99));
 }
 
 #quest-board-view main {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   overflow: visible;
-  padding-bottom: 24px;
+  padding-bottom: 32px;
+  max-width: 1480px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+#quest-board-view .screen-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 6px 0 12px;
+  margin-bottom: 14px;
+  background: linear-gradient(180deg, rgba(7,12,24,.98), rgba(7,12,24,.9), rgba(7,12,24,0));
 }
 
 #idea-intake-panel,
 #idea-handoff-panel {
-  padding: 14px;
+  padding: 18px;
+  border-color: rgba(86,180,255,.32);
+  box-shadow: 0 0 0 1px rgba(86,180,255,.12) inset, 0 12px 30px rgba(0,0,0,.24);
 }
 
 #idea-intake-panel {
@@ -1182,9 +1200,10 @@ body.ambience-off #alert-routing-layer {
   min-height: 100%;
   border: 1px solid rgba(72, 104, 158, .58);
   border-radius: 12px;
-  background: rgba(10, 18, 34, .78);
-  padding: 12px;
+  background: linear-gradient(180deg, rgba(11, 19, 37, .92), rgba(9, 16, 30, .86));
+  padding: 14px;
   color: #dbe9ff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
 }
 
 .handoff-output.empty {
@@ -1238,7 +1257,7 @@ body.ambience-off #alert-routing-layer {
 .branch-route-card {
   border: 1px solid rgba(72, 104, 158, .48);
   border-radius: 10px;
-  background: rgba(12, 23, 42, .72);
+  background: linear-gradient(180deg, rgba(16, 28, 49, .92), rgba(12, 23, 42, .78));
   padding: 10px;
 }
 
@@ -1258,11 +1277,12 @@ body.ambience-off #alert-routing-layer {
   width: 100%;
   border: 1px solid rgba(86, 180, 255, .28);
   border-radius: 12px;
-  background: rgba(13, 25, 43, .9);
+  background: linear-gradient(180deg, rgba(15, 28, 48, .96), rgba(12, 22, 39, .92));
   color: #e5efff;
   padding: 10px;
   text-align: left;
   cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.015);
 }
 
 .child-mission-card {
@@ -1440,6 +1460,10 @@ body.ambience-off #alert-routing-layer {
   margin-top: 8px;
   font-size: 11px;
   color: #dbe9ff;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(86,180,255,.16);
+  background: rgba(8, 17, 31, .54);
 }
 
 .mission-subquest-review {
@@ -1481,14 +1505,20 @@ body.ambience-off #alert-routing-layer {
 .mission-output-card {
   border: 1px solid rgba(86, 180, 255, .28);
   border-radius: 12px;
-  background: rgba(13, 25, 43, .88);
-  padding: 12px;
+  background: linear-gradient(180deg, rgba(14, 27, 47, .94), rgba(10, 20, 37, .9));
+  padding: 14px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
 }
 
 .mission-output-summary,
 .mission-output-meta {
   font-size: 12px;
   color: #dce9ff;
+}
+
+.mission-output-summary {
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .mission-output-grid {
@@ -1527,18 +1557,19 @@ body.ambience-off #alert-routing-layer {
 #quest-list {
   overflow: auto;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 14px;
   padding-right: 4px;
 }
 
 .quest-card {
-  padding: 12px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   background: linear-gradient(180deg, rgba(17,31,56,.92), rgba(11,19,36,.94));
   border: 1px solid rgba(72, 104, 158, .62);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02), 0 12px 26px rgba(0,0,0,.18);
 }
 
 .quest-card.focus-pulse {
@@ -1557,13 +1588,90 @@ body.ambience-off #alert-routing-layer {
   display: flex;
   justify-content: space-between;
   gap: 10px;
+  align-items: flex-start;
+}
+
+.quest-title-block {
+  display: grid;
+  gap: 6px;
+}
+
+.quest-category-kicker {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  color: var(--color-glow-emerald);
+}
+
+.quest-header-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.quest-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(86,180,255,.22);
+  background: rgba(9, 18, 34, .82);
+  color: #dfeeff;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.quest-status-pill.status-backlog {
+  color: #9ec3ff;
+}
+
+.quest-status-pill.status-in_progress,
+.quest-status-pill.status-review {
+  color: #caffda;
+  border-color: rgba(106,210,123,.38);
+}
+
+.quest-status-pill.status-done {
+  color: #ffe4a8;
 }
 
 .quest-card-header h3 {
   margin: 0;
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.35;
   color: var(--color-accent-gold);
+}
+
+.quest-card-body {
+  display: grid;
+  gap: 12px;
+}
+
+.quest-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.quest-stat-card {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(86,180,255,.18);
+  background: rgba(9, 18, 34, .72);
+}
+
+.quest-stat-card span {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #8eabd7;
+}
+
+.quest-stat-card strong {
+  font-size: 12px;
+  color: #f4f8ff;
 }
 
 .quest-difficulty {
@@ -1631,6 +1739,39 @@ body.ambience-off #alert-routing-layer {
 
 .quest-brief-line {
   margin-top: 8px;
+  padding: 10px 12px;
+  border-left: 2px solid rgba(255,209,102,.58);
+  border-radius: 0 10px 10px 0;
+  background: rgba(9, 18, 34, .52);
+}
+
+.quest-output-preview {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(86,180,255,.2);
+  background: linear-gradient(180deg, rgba(9, 18, 34, .82), rgba(8, 16, 28, .72));
+}
+
+.quest-output-label,
+.recommended-label {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  color: var(--color-glow-emerald);
+}
+
+.quest-card-footer {
+  display: grid;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.reward-text {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,209,102,.18);
+  background: rgba(39, 27, 10, .22);
 }
 
 .urgency-low { color: #67d087; }
@@ -1642,6 +1783,10 @@ body.ambience-off #alert-routing-layer {
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(86,180,255,.14);
+  background: rgba(9, 18, 34, .52);
 }
 
 .agent-thumbnail {
@@ -2323,6 +2468,10 @@ body.ambience-off #alert-routing-layer {
   .idea-intake-grid,
   #idea-handoff-panel {
     grid-template-columns: 1fr;
+  }
+
+  .quest-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .idea-intake-actions {
