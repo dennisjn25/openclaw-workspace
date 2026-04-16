@@ -1051,12 +1051,18 @@ body.ambience-off #alert-routing-layer {
 }
 
 /* Quest Board */
+#quest-board-view {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 #quest-board-view main {
   min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  overflow: hidden;
+  overflow: visible;
+  padding-bottom: 24px;
 }
 
 #idea-intake-panel,
